@@ -6,3 +6,4 @@ dist/
 bun.sqlite
 drizzle/
 .DS_Store
+dev-db

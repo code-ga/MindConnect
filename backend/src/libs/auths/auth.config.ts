@@ -33,7 +33,7 @@ export const auth = betterAuth({
       ...(process.env.BASE_URL ? [process.env.BASE_URL] : []),
       "http://localhost:3001",
       ...FRONTEND_URLs,
-      request.headers.get("origin") || "",
+      // request?.headers.get("origin") || "",
     ];
   },
   secret: process.env.BETTER_AUTH_SECRET!,

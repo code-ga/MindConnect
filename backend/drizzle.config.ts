@@ -4,7 +4,7 @@ import path from "path";
 
 export default defineConfig({
   out: "./drizzle",
-  schema: "./database/schema.ts",
+  schema: "./src/database/schema.ts",
   dialect: "postgresql",
   ...(process.env.NODE_ENV === "production"
     ? {

@@ -13,7 +13,7 @@ export const db = isProduction
   ? drizzlePostgres(new Client({ connectionString: dbUrl }), {
       schema,
     })
-  : drizzlePGlite(new PGlite(path.join(__dirname, "../dev-db")), { schema });
+  : drizzlePGlite(new PGlite(path.join(__dirname, "../../dev-db")), { schema });
 
 if (!isProduction) {
   // For Electric, we need to initialize the database
@@ -21,7 +21,7 @@ if (!isProduction) {
   try {
     console.log("Running migrations...");
     await migrate(db, {
-      migrationsFolder: path.join(__dirname, "../drizzle"),
+      migrationsFolder: path.join(__dirname, "../../drizzle"),
     });
     console.log("Migrations complete.");
   } catch (error) {

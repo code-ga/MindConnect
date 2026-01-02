@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -65,7 +65,26 @@ export const userRole = pgTable("userRole", {
 	userId: text("userId")
 		.notNull()
 		.references(() => user.id),
-	role: text("role").notNull(),
+});
+
+const clusterStatus = pgEnum("cluster_status", ["active", "inactive"]);
+export const k8sCluster = pgTable("k8sCluster", {
+	id: serial("id").primaryKey(),
+	name: text("name").notNull(),
+	description: text("description"),
+	tags: text("tags").array().default([]).notNull(),
+	// ownerId: text("owner_id")
+	// 	.notNull()
+	// 	.references(() => user.id, { onDelete: "cascade" }),
+	// url: text("url").notNull(),
+	status: clusterStatus().notNull().default("inactive"),
+	agentToken: text("agent_token")
+		.notNull()
+		.$defaultFn(() => crypto.randomUUID()),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at")
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
 });
 
 export const schema = {
@@ -74,4 +93,5 @@ export const schema = {
 	account,
 	verification,
 	userRole,
+	k8sCluster,
 } as const;
