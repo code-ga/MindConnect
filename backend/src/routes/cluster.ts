@@ -6,12 +6,18 @@ import { baseResponseSchema, errorResponseSchema } from "../types";
 import { Type } from "@sinclair/typebox";
 import { dbSchemaTypes } from "../database/type";
 import { eq } from "drizzle-orm";
+import { agentManagerService } from "../services/agentManager";
 
 export const clusterRoute = new Elysia({ prefix: "/cluster" })
 	.use(authenticationMiddleware)
+	.use(agentManagerService)
+	.onStart(async (app) => {
+		console.log(app.decorator.agentManager.instanceId);
+		// You can initialize connections or other resources here
+	})
 	.guard(
 		{
-			auth: true,
+			userAuth: true,
 		},
 		(app) =>
 			app
@@ -31,6 +37,7 @@ export const clusterRoute = new Elysia({ prefix: "/cluster" })
 							return ctx.status(500, {
 								success: false,
 								message: "Failed to create cluster",
+								timestamp: Date.now(),
 							});
 						}
 						return ctx.status(201, {
@@ -95,6 +102,7 @@ export const clusterRoute = new Elysia({ prefix: "/cluster" })
 							return ctx.status(404, {
 								success: false,
 								message: "Cluster not found",
+								timestamp: Date.now(),
 							});
 						}
 						return ctx.status(200, {
@@ -132,6 +140,7 @@ export const clusterRoute = new Elysia({ prefix: "/cluster" })
 							return ctx.status(404, {
 								success: false,
 								message: "Cluster not found",
+								timestamp: Date.now(),
 							});
 						}
 						return ctx.status(200, {
@@ -162,6 +171,7 @@ export const clusterRoute = new Elysia({ prefix: "/cluster" })
 							return ctx.status(404, {
 								success: false,
 								message: "Cluster not found",
+								timestamp: Date.now(),
 							});
 						}
 						return ctx.status(200, {
@@ -187,20 +197,29 @@ export const clusterRoute = new Elysia({ prefix: "/cluster" })
 						const cluster = await db
 							.select()
 							.from(schema.k8sCluster)
-							.where(eq(schema.k8sCluster.id, Number(ctx.params.id)));
-						if (cluster.length === 0 || !cluster[0]) {
+							.where(eq(schema.k8sCluster.id, Number(ctx.params.id)))
+							.leftJoin(
+								schema.clusterAgent,
+								eq(schema.k8sCluster.agentId, schema.clusterAgent.id),
+							);
+						if (
+							cluster.length === 0 ||
+							!cluster[0] ||
+							!cluster[0].clusterAgent
+						) {
 							return ctx.status(404, {
 								success: false,
 								message: "Cluster not found",
+								timestamp: Date.now(),
 							});
 						}
 						return ctx.status(200, {
 							success: true,
 							message: "Cluster agent config fetched successfully",
 							data: {
-								clusterId: cluster[0].id,
-								clusterName: cluster[0].name,
-								clusterToken: cluster[0].agentToken,
+								clusterId: cluster[0].k8sCluster.id,
+								clusterName: cluster[0].k8sCluster.name,
+								clusterToken: cluster[0].clusterAgent.token,
 							},
 							timestamp: Date.now(),
 						});

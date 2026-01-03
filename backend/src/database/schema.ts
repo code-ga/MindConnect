@@ -1,4 +1,12 @@
-import { boolean, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import {
+	boolean,
+	pgEnum,
+	pgTable,
+	serial,
+	text,
+	timestamp,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -67,6 +75,18 @@ export const userRole = pgTable("userRole", {
 		.references(() => user.id),
 });
 
+const clusterAgent = pgTable("clusterAgent", {
+	id: serial("id").primaryKey(),
+	token: text("token")
+		.notNull()
+		.unique()
+		.$defaultFn(() => crypto.randomUUID()),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at")
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+});
+
 const clusterStatus = pgEnum("cluster_status", ["active", "inactive"]);
 export const k8sCluster = pgTable("k8sCluster", {
 	id: serial("id").primaryKey(),
@@ -78,14 +98,21 @@ export const k8sCluster = pgTable("k8sCluster", {
 	// 	.references(() => user.id, { onDelete: "cascade" }),
 	// url: text("url").notNull(),
 	status: clusterStatus().notNull().default("inactive"),
-	agentToken: text("agent_token")
+	agentId: serial("agent_id")
 		.notNull()
-		.$defaultFn(() => crypto.randomUUID()),
+		.references(() => clusterAgent.id, { onDelete: "cascade" }),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
 });
+
+export const agentClusterRelation = relations(clusterAgent, ({ one }) => ({
+	cluster: one(k8sCluster, {
+		fields: [clusterAgent.id],
+		references: [k8sCluster.agentId],
+	}),
+}));
 
 export const schema = {
 	user,
@@ -94,4 +121,5 @@ export const schema = {
 	verification,
 	userRole,
 	k8sCluster,
+	clusterAgent,
 } as const;

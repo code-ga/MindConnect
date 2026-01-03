@@ -3,7 +3,7 @@ import { type Static, Type as t, type TSchema, Type } from "@sinclair/typebox";
 export const baseResponseSchema = <T extends TSchema>(dataSchema: T) => {
 	return t.Object({
 		success: t.Boolean(),
-		message: t.String().optional(),
+		message: t.Optional(t.String()),
 		data: dataSchema,
 		timestamp: Type.Transform(Type.Optional(Type.Number()))
 			.Decode((value) => value ?? Date.now()) // Set dynamic default on decode
@@ -39,13 +39,13 @@ export type PaginatedResponse<T extends TSchema> = Static<
 export const errorResponseSchema = t.Object({
 	success: t.Boolean({ default: false }),
 	message: t.String(),
-	timestamp: t
-		.Number()
-		.optional()
-		.default(() => Date.now()),
-	status: t
-		.Number()
-		.optional()
-		.default(() => 500),
+	timestamp: Type.Transform(Type.Optional(Type.Number()))
+		.Decode((value) => value ?? Date.now()) // Set dynamic default on decode
+		.Encode((value) => value),
+	status: t.Optional(
+		t.Number({
+			default: 500,
+		}),
+	),
 });
 export type ErrorResponse = Static<typeof errorResponseSchema>;

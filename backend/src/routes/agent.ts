@@ -1,0 +1,83 @@
+import Elysia from "elysia";
+import { authenticationMiddleware } from "../middleware/auth";
+import { db } from "../database";
+import { schema } from "../database/schema";
+import { baseResponseSchema, errorResponseSchema } from "../types";
+import { Type } from "@sinclair/typebox";
+import { dbSchemaTypes } from "../database/type";
+import { eq } from "drizzle-orm";
+import { agentManagerService } from "../services/agentManager";
+export const agentRoute = new Elysia({ prefix: "/agent" })
+	.use(authenticationMiddleware)
+	.use(agentManagerService)
+	.onStart(async (app) => {
+		console.log(app.decorator.agentManager.instanceId);
+		// You can initialize connections or other resources here
+	})
+	.guard(
+		{
+			agentAuth: true,
+		},
+		(app) =>
+			app
+				.get(
+					"/config",
+					async (ctx) => {
+						const cluster = ctx.cluster;
+						return ctx.status(200, {
+							success: true,
+							message: "Cluster agent config fetched successfully",
+							data: {
+								clusterId: cluster.id,
+								clusterName: cluster.name,
+								clusterToken: ctx.agent.token,
+							},
+							timestamp: Date.now(),
+						});
+					},
+					{
+						detail: {
+							tags: ["Agent"],
+						},
+						response: {
+							200: baseResponseSchema(
+								Type.Object({
+									clusterId: dbSchemaTypes.k8sCluster.id,
+									clusterName: dbSchemaTypes.k8sCluster.name,
+									clusterToken: dbSchemaTypes.clusterAgent.token,
+								}),
+							),
+							400: errorResponseSchema,
+							401: errorResponseSchema,
+							500: errorResponseSchema,
+						},
+					},
+				)
+				.ws("/ws", {
+					detail: {
+						tags: ["Agent"],
+					},
+					open: async (ctx) => {
+						const cluster = ctx.data.cluster;
+						console.log(
+							`Agent connected for cluster ${cluster.name} (${cluster.id})`,
+						);
+						// Here you can store the WebSocket connection for later use
+					},
+					message: async (ctx, msg) => {
+						const cluster = ctx.data.cluster;
+						console.log(
+							`Received message from cluster ${cluster.name} (${cluster.id}):`,
+							msg,
+						);
+						// Handle incoming messages from the agent here
+					},
+					close: async (ctx) => {
+						const cluster = ctx.data.cluster;
+						console.log(
+							`Agent disconnected for cluster ${cluster.name} (${cluster.id})`,
+						);
+						// Clean up any resources related to the disconnected agent here
+					},
+				}),
+	);
