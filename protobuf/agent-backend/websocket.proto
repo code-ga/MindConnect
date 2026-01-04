@@ -1,0 +1,11 @@
+syntax = "proto3";
+package api;
+
+// This is important for Go generation
+option go_package = "./pb";
+
+message K8sStatus {
+    bool enabled = 1;
+    repeated string namespace = 2;
+    string cluster_name = 3;
+}

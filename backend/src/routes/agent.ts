@@ -7,7 +7,7 @@ import { Type } from "@sinclair/typebox";
 import { dbSchemaTypes } from "../database/type";
 import { eq } from "drizzle-orm";
 import { agentManagerService } from "../services/agentManager";
-export const agentRoute = new Elysia({ prefix: "/agent" })
+export const agentRoute = new Elysia({ prefix: "/agents" })
 	.use(authenticationMiddleware)
 	.use(agentManagerService)
 	.onStart(async (app) => {
@@ -53,6 +53,40 @@ export const agentRoute = new Elysia({ prefix: "/agent" })
 						},
 					},
 				)
+				.get(
+					"/cluster-info",
+					async (ctx) => {
+						const cluster = ctx.cluster;
+						const clusterInfo = await db.query.k8sCluster.findFirst({
+							where: eq(schema.k8sCluster.id, cluster.id),
+						});
+						if (!clusterInfo) {
+							return ctx.status(404, {
+								success: false,
+								message: "Cluster not found",
+								timestamp: Date.now(),
+							});
+						}
+						return ctx.status(200, {
+							success: true,
+							message: "Cluster info fetched successfully",
+							data: clusterInfo,
+							timestamp: Date.now(),
+						});
+					},
+					{
+						detail: {
+							tags: ["Agent"],
+						},
+						response: {
+							200: baseResponseSchema(Type.Object(dbSchemaTypes.k8sCluster)),
+							400: errorResponseSchema,
+							401: errorResponseSchema,
+							404: errorResponseSchema,
+							500: errorResponseSchema,
+						},
+					},
+				)
 				.ws("/ws", {
 					detail: {
 						tags: ["Agent"],
@@ -62,6 +96,9 @@ export const agentRoute = new Elysia({ prefix: "/agent" })
 						console.log(
 							`Agent connected for cluster ${cluster.name} (${cluster.id})`,
 						);
+						ctx.data.agentManager.emit("agent/connected", {
+							agentId: `${ctx.data.agent.id}`,
+						});
 						// Here you can store the WebSocket connection for later use
 					},
 					message: async (ctx, msg) => {

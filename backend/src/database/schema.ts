@@ -101,6 +101,8 @@ export const k8sCluster = pgTable("k8sCluster", {
 	agentId: serial("agent_id")
 		.notNull()
 		.references(() => clusterAgent.id, { onDelete: "cascade" }),
+	enableS3Service: boolean("enable_s3_service").default(false).notNull(),
+	enableDbService: boolean("enable_db_service").default(false).notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
 		.$onUpdate(() => /* @__PURE__ */ new Date())

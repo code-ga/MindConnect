@@ -1,12 +1,17 @@
 import Elysia from "elysia";
 import { EventEmitter } from "events";
 
-export class AgentManager extends EventEmitter {
+interface EventMap extends Record<string, any[]> {
+	"agent/connected": [{ agentId: string }];
+	"agent/disconnected": [{ agentId: string }];
+}
+
+export class AgentManager extends EventEmitter<EventMap> {
 	instanceId: string;
 	constructor() {
 		super();
 		this.instanceId = crypto.randomUUID();
-    console.log(`AgentManager initialized with instanceId: ${this.instanceId}`);
+		console.log(`AgentManager initialized with instanceId: ${this.instanceId}`);
 	}
 }
 

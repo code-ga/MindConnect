@@ -125,6 +125,8 @@ export const clusterRoute = new Elysia({ prefix: "/cluster" })
 								name: dbSchemaTypes.k8sCluster.name,
 								description: dbSchemaTypes.k8sCluster.description,
 								tags: dbSchemaTypes.k8sCluster.tags,
+								enableS3Service: dbSchemaTypes.k8sCluster.enableS3Service,
+								enableDbService: dbSchemaTypes.k8sCluster.enableDbService,
 							}),
 						),
 					},
