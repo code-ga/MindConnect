@@ -14,7 +14,7 @@ export const db = isProduction
       schema,
     })
   : drizzlePGlite(new PGlite(path.join(__dirname, "../../dev-db")), { schema });
-
+export type Database = typeof db;
 if (!isProduction) {
   // For Electric, we need to initialize the database
   // This is not needed for production with a real Postgres database

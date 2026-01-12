@@ -1,12 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-	boolean,
-	pgEnum,
-	pgTable,
-	serial,
-	text,
-	timestamp,
-} from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -67,52 +60,74 @@ export const verification = pgTable("verification", {
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
 });
-
-export const userRole = pgTable("userRole", {
-	id: text("id").primaryKey(),
-	userId: text("userId")
-		.notNull()
-		.references(() => user.id),
-});
-
-const clusterAgent = pgTable("clusterAgent", {
-	id: serial("id").primaryKey(),
-	token: text("token")
-		.notNull()
-		.unique()
+export const permissionEnum = pgEnum("permission", [
+	"user",
+	"psychologist",
+	"therapist",
+	"manager",
+	"admin",
+]);
+export const profile = pgTable("profile", {
+	id: text("id")
+		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at")
-		.$onUpdate(() => /* @__PURE__ */ new Date())
-		.notNull(),
-});
-
-const clusterStatus = pgEnum("cluster_status", ["active", "inactive"]);
-export const k8sCluster = pgTable("k8sCluster", {
-	id: serial("id").primaryKey(),
-	name: text("name").notNull(),
-	description: text("description"),
-	tags: text("tags").array().default([]).notNull(),
-	// ownerId: text("owner_id")
-	// 	.notNull()
-	// 	.references(() => user.id, { onDelete: "cascade" }),
-	// url: text("url").notNull(),
-	status: clusterStatus().notNull().default("inactive"),
-	agentId: serial("agent_id")
+	userId: text("user_id")
 		.notNull()
-		.references(() => clusterAgent.id, { onDelete: "cascade" }),
-	enableS3Service: boolean("enable_s3_service").default(false).notNull(),
-	enableDbService: boolean("enable_db_service").default(false).notNull(),
+		.references(() => user.id, { onDelete: "cascade" })
+		.unique(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+
+	username: text("username").notNull(),
+	permission: permissionEnum("permission").array().notNull().default(["user"]),
+
+	updatedAt: timestamp("updated_at")
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+});
+
+export const requestType = pgEnum("request_type", ["role_request"]);
+export const requestStatus = pgEnum("request_status", ["pending", "approved", "rejected"]);
+export const userRequest = pgTable("request", {
+	id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+	userId: text("user_id")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+
+	status: requestStatus("status").notNull().default("pending"),
+	content: text("content").notNull(),
+	type: requestType("type").notNull().default("role_request"),
+
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
 });
 
-export const agentClusterRelation = relations(clusterAgent, ({ one }) => ({
-	cluster: one(k8sCluster, {
-		fields: [clusterAgent.id],
-		references: [k8sCluster.agentId],
+export const chattingRoom = pgTable("chatting_room", {
+	id: text("id").primaryKey(),
+	participantIds: text("participant_ids")
+		.notNull()
+		.array()
+		.default([])
+		.references(() => user.id, { onDelete: "cascade" }),
+
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at")
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+});
+
+export const userRequestRelations = relations(userRequest, ({ one }) => ({
+	user: one(user, {
+		fields: [userRequest.userId],
+		references: [user.id],
+	}),
+}));
+
+export const profileRelations = relations(profile, ({ one }) => ({
+	user: one(user, {
+		fields: [profile.userId],
+		references: [user.id],
 	}),
 }));
 
@@ -121,7 +136,7 @@ export const schema = {
 	session,
 	account,
 	verification,
-	userRole,
-	k8sCluster,
-	clusterAgent,
+	profile,
+	userRequest,
+	chattingRoom,
 } as const;
