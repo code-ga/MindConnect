@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator"
 import { Github, Mail as MailIcon, Lock as LockIcon, Loader2 } from "lucide-react"
 import { ModeToggle } from "@/components/mode-toggle"
+import { LOGIN_REDIRECT_URL } from "../constants"
 
 export const Route = createFileRoute("/login")({
   validateSearch: z.object({
@@ -62,7 +63,7 @@ function LoginPage() {
     try {
       await authClient.signIn.social({
         provider,
-        callbackURL: "/dashboard",
+        callbackURL: LOGIN_REDIRECT_URL,
       })
     } catch (err: any) {
       setError(`Failed to login with ${provider}`)

@@ -15,10 +15,14 @@ export const authenticationMiddleware = new Elysia({
 			});
 
 			if (!session) return status(401);
-
+			const profile = await db
+				.select()
+				.from(schema.profile)
+				.where(eq(schema.profile.userId, session.user.id));
 			return {
 				user: session.user,
 				session: session.session,
+				profile: profile[0],
 			};
 		},
 	},
@@ -47,9 +51,9 @@ export const authenticationMiddleware = new Elysia({
 					profile: userProfile[0],
 				};
 			// if all permissions are in userPermissions return true
+			console.log("permissions", permissions);
+			console.log("userPermissions", userPermissions);
 			if (
-				permissions &&
-				Array.isArray(permissions) &&
 				permissions.every((permission) => userPermissions.includes(permission))
 			)
 				return {

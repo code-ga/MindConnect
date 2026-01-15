@@ -6,12 +6,15 @@ import { db } from "../database";
 import { Type } from "@sinclair/typebox";
 import { dbSchemaTypes } from "../database/type";
 import { baseResponseSchema, errorResponseSchema } from "../types";
+import { appStateService } from "../services/AppState";
+import type { Static } from "@sinclair/typebox";
 
 export const profileRouter = new Elysia({
 	prefix: "/profile",
 	detail: { description: "Profile Routes", tags: ["Profile"] },
 })
 	.use(authenticationMiddleware)
+	.use(appStateService)
 	.guard(
 		{ userAuth: true },
 		(app) =>
@@ -64,12 +67,19 @@ export const profileRouter = new Elysia({
 								success: false,
 							});
 						}
+						const appState = await ctx.appState.getAppState();
+						const permission = ["user"] as Static<
+							typeof dbSchemaTypes.profile.permission
+						>;
+						if (appState.createNewAdmin) {
+							permission.push("admin");
+						}
 						const profile = await db
 							.insert(schema.profile)
 							.values({
 								userId: ctx.user.id,
 								username: ctx.body.username,
-								permission: ["user"],
+								permission: permission,
 							})
 							.returning();
 						if (!profile || !profile[0]) {
@@ -80,6 +90,9 @@ export const profileRouter = new Elysia({
 								success: false,
 							});
 						}
+						ctx.appState.updateAppState({
+							createNewAdmin: false,
+						});
 						return ctx.status(201, {
 							status: 201,
 							data: profile[0],

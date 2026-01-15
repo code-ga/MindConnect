@@ -1,5 +1,15 @@
+// ALERT: user table only for auth, profile table for user data
+
 import { relations } from "drizzle-orm";
-import { boolean, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+	boolean,
+	jsonb,
+	pgEnum,
+	pgTable,
+	serial,
+	text,
+	timestamp,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -62,6 +72,7 @@ export const verification = pgTable("verification", {
 });
 export const permissionEnum = pgEnum("permission", [
 	"user",
+	"listener",
 	"psychologist",
 	"therapist",
 	"manager",
@@ -78,23 +89,41 @@ export const profile = pgTable("profile", {
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 
 	username: text("username").notNull(),
-	permission: permissionEnum("permission").array().notNull().default(["user"]),
+	permission: permissionEnum().array().default(["user"]).notNull(),
 
 	updatedAt: timestamp("updated_at")
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
 });
-
-export const requestType = pgEnum("request_type", ["role_request"]);
-export const requestStatus = pgEnum("request_status", ["pending", "approved", "rejected"]);
+export const requestType = pgEnum("request_type", [
+	"role_request",
+	"feature_request",
+]);
+export const requestStatus = pgEnum("request_status", [
+	"pending",
+	"processing",
+	"accepted",
+	"rejected",
+]);
 export const userRequest = pgTable("request", {
-	id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-	userId: text("user_id")
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	profileId: text("profile_id")
 		.notNull()
-		.references(() => user.id, { onDelete: "cascade" }),
+		.references(() => profile.id, { onDelete: "cascade" }),
 
 	status: requestStatus("status").notNull().default("pending"),
 	content: text("content").notNull(),
+	processedAt: timestamp("processed_at"),
+	processedBy: text("processed_by").references(() => profile.id, {
+		onDelete: "cascade",
+	}),
+	processedReason: text("processed_reason"),
+	processedNote: text("processed_note"),
+	chatId: text("chat_id").references(() => chattingRoom.id, {
+		onDelete: "cascade",
+	}),
 	type: requestType("type").notNull().default("role_request"),
 
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -105,11 +134,7 @@ export const userRequest = pgTable("request", {
 
 export const chattingRoom = pgTable("chatting_room", {
 	id: text("id").primaryKey(),
-	participantIds: text("participant_ids")
-		.notNull()
-		.array()
-		.default([])
-		.references(() => user.id, { onDelete: "cascade" }),
+	participantIds: text("participant_ids").notNull().array().default([]),
 
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
@@ -117,19 +142,21 @@ export const chattingRoom = pgTable("chatting_room", {
 		.notNull(),
 });
 
-export const userRequestRelations = relations(userRequest, ({ one }) => ({
-	user: one(user, {
-		fields: [userRequest.userId],
-		references: [user.id],
-	}),
-}));
+export interface AppState {
+	createNewAdmin: boolean;
+}
 
-export const profileRelations = relations(profile, ({ one }) => ({
-	user: one(user, {
-		fields: [profile.userId],
-		references: [user.id],
+export const AppState = pgTable("app_state", {
+	id: serial("id").primaryKey(),
+
+	state: jsonb("state").notNull().$type<AppState>().default({
+		createNewAdmin: true,
 	}),
-}));
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at")
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+});
 
 export const schema = {
 	user,
@@ -139,4 +166,44 @@ export const schema = {
 	profile,
 	userRequest,
 	chattingRoom,
+	AppState,
 } as const;
+
+// export const relation = defineRelations(schema, (r) => ({
+// 	user: {
+// 		profile: r.one.profile({
+// 			from: r.user.id,
+// 			to: r.profile.userId,
+// 		}),
+// 	},
+// 	profile: {
+// 		user: r.one.user({
+// 			from: r.profile.userId,
+// 			to: r.user.id,
+// 		}),
+// 		request: r.many.userRequest({
+// 			from: r.profile.id,
+// 			to: r.userRequest.profileId,
+// 		}),
+// 		chattingRoom: r.many.chattingRoom({
+// 			from: r.profile.id,
+// 			to: r.chattingRoom.participantIds,
+// 		}),
+// 	},
+// 	userRequest: {
+// 		profile: r.one.profile({
+// 			from: r.userRequest.profileId,
+// 			to: r.profile.id,
+// 		}),
+// 		chattingRoom: r.one.chattingRoom({
+// 			from: r.userRequest.chatId,
+// 			to: r.chattingRoom.id,
+// 		}),
+// 	},
+// 	chattingRoom: {
+// 		participant: r.many.profile({
+// 			from: r.chattingRoom.participantIds,
+// 			to: r.profile.id,
+// 		}),
+// 	},
+// }));

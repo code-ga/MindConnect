@@ -6,6 +6,7 @@ import { openapi } from "@elysiajs/openapi";
 import { Elysia } from "elysia";
 import { OpenAPI } from "./libs/auths/openAPI";
 import { apiRouter } from "./routes";
+import { appStateService } from "./services/AppState";
 
 export const app = new Elysia()
 	.use(
@@ -23,7 +24,7 @@ export const app = new Elysia()
 			},
 		}),
 	)
-
+	.use(appStateService)
 	.use(apiRouter)
 	.listen(3001);
 

@@ -1,16 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Menu, Network, X } from "lucide-react";
+import { Home, Menu, Network, X, LayoutDashboard, ClipboardList, Settings, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { ModeToggle } from "./mode-toggle";
 import logo from "../logo.svg"
 
+import { RoleGuard } from "./role-guard";
+
 export default function Header() {
 	const [isOpen, setIsOpen] = useState(false);
+	// Removed unused user variable
 
 	return (
 		<>
 			<header className="p-4 flex items-center bg-card text-card-foreground border-b shadow-sm">
 				<button
+					type="button"
 					onClick={() => setIsOpen(true)}
 					className="p-2 hover:bg-accent rounded-lg transition-colors"
 					aria-label="Open menu"
@@ -39,6 +43,7 @@ export default function Header() {
 				<div className="flex items-center justify-between p-4 border-b">
 					<h2 className="text-xl font-bold">Navigation</h2>
 					<button
+						type="button"
 						onClick={() => setIsOpen(false)}
 						className="p-2 hover:bg-accent rounded-lg transition-colors"
 						aria-label="Close menu"
@@ -61,10 +66,8 @@ export default function Header() {
 						<span className="font-medium">Home</span>
 					</Link>
 
-					{/* Demo Links Start */}
-
 					<Link
-						to="/demo/tanstack-query"
+						to="/dashboard"
 						onClick={() => setIsOpen(false)}
 						className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
 						activeProps={{
@@ -72,9 +75,66 @@ export default function Header() {
 								"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
 						}}
 					>
-						<Network size={20} />
-						<span className="font-medium">TanStack Query</span>
+						<LayoutDashboard size={20} />
+						<span className="font-medium">Dashboard</span>
 					</Link>
+
+					<Link
+						to="/requests"
+						onClick={() => setIsOpen(false)}
+						className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+						activeProps={{
+							className:
+								"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
+						}}
+					>
+						<ClipboardList size={20} />
+						<span className="font-medium">My Requests</span>
+					</Link>
+
+					<Link
+						to="/settings"
+						onClick={() => setIsOpen(false)}
+						className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+						activeProps={{
+							className:
+								"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
+						}}
+					>
+						<Settings size={20} />
+						<span className="font-medium">Settings</span>
+					</Link>
+
+					<RoleGuard requiredPermissions={["manager", "admin"]}>
+						<Link
+							to="/admin/requests"
+							onClick={() => setIsOpen(false)}
+							className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+							activeProps={{
+								className:
+									"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
+							}}
+						>
+							<ShieldCheck size={20} />
+							<span className="font-medium">Admin Panel</span>
+						</Link>
+					</RoleGuard>
+
+					<div className="my-4 border-t pt-4">
+						<p className="px-3 text-xs font-semibold text-muted-foreground uppercase mb-2">Development</p>
+						<Link
+							to="/demo/tanstack-query"
+							onClick={() => setIsOpen(false)}
+							className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+							activeProps={{
+								className:
+									"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
+							}}
+						>
+							<Network size={20} />
+							<span className="font-medium">TanStack Query</span>
+						</Link>
+					</div>
 				</nav>
 			</aside>
 		</>
