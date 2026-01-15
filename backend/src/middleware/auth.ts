@@ -4,6 +4,7 @@ import { db } from "../database";
 import { eq } from "drizzle-orm";
 import { schema } from "../database/schema";
 import type { dbSchemaTypes } from "../database/type";
+import { isAllElementsPresent } from "../utils/array";
 
 export const authenticationMiddleware = new Elysia({
 	name: "authentication",
@@ -53,9 +54,7 @@ export const authenticationMiddleware = new Elysia({
 			// if all permissions are in userPermissions return true
 			console.log("permissions", permissions);
 			console.log("userPermissions", userPermissions);
-			if (
-				permissions.every((permission) => userPermissions.includes(permission))
-			)
+			if (isAllElementsPresent(permissions, userPermissions))
 				return {
 					user: session.user,
 					session: session.session,

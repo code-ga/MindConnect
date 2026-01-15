@@ -288,5 +288,67 @@ export const userRequestRouter = new Elysia({
 						400: errorResponseSchema,
 					},
 				},
+			)
+			.post(
+				"/request-private-chat-room",
+				async (ctx) => {
+					// this will create the private chat room to allow user (in this case we call that is requester) to chat with manager (in this case we call that is manager) for explain more about problem
+					if (!ctx.profile) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Profile not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+					const request = await db
+						.select()
+						.from(schema.userRequest)
+						.where(eq(schema.userRequest.id, ctx.body.requestId));
+					if (!request || !request[0]) {
+						return ctx.status(404, {
+							status: 404,
+							message: "User request not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+					const room = await db
+						.insert(schema.chattingRoom)
+						.values({
+							participantIds: [ctx.profile.id, request[0].profileId],
+							isHiddenParticipantProfile: !ctx.body.showSupporter,
+							status: "active",
+							type: "private-chat-for-support",
+							isGroupChat: false,
+						})
+						.returning();
+					if (!room[0]) {
+						return ctx.status(404, {
+							status: 404,
+							message: "User request private chat room not created",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+					return ctx.status(200, {
+						status: 200,
+						data: room[0],
+						message: "User request private chat room created successfully",
+						timestamp: Date.now(),
+						success: true,
+					});
+				},
+				{
+					body: Type.Object({
+						requestId: Type.String(),
+						showSupporter: Type.Boolean({ default: true }),
+					}),
+					response: {
+						200: baseResponseSchema(Type.Object(dbSchemaTypes.chattingRoom)),
+						404: errorResponseSchema,
+						400: errorResponseSchema,
+					},
+				},
 			),
 	);

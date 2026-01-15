@@ -1,6 +1,6 @@
 // ALERT: user table only for auth, profile table for user data
 
-import { relations } from "drizzle-orm";
+import { defineRelations } from "drizzle-orm";
 import {
 	boolean,
 	jsonb,
@@ -132,10 +132,52 @@ export const userRequest = pgTable("request", {
 		.notNull(),
 });
 
-export const chattingRoom = pgTable("chatting_room", {
-	id: text("id").primaryKey(),
-	participantIds: text("participant_ids").notNull().array().default([]),
+export const chatRoomStatus = pgEnum("chat_room_status", [
+	"active",
+	"archived",
+]);
 
+export const chatRoomType = pgEnum("chat_room_type", [
+	"private-chat-for-support",
+	"private-chat-for-therapy",
+	"group-chat-for-support",
+	"group-chat-for-therapy",
+]);
+
+export const chattingRoom = pgTable("chatting_room", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	participantIds: text("participant_ids").notNull().array().default([]),
+	isHiddenParticipantProfile: boolean("is_hidden_participant_profile")
+		.notNull()
+		.default(false),
+	status: chatRoomStatus("status").notNull().default("active"),
+	type: chatRoomType("type").notNull().default("private-chat-for-support"),
+	isGroupChat: boolean("is_group_chat").notNull().default(false),
+
+	archivedAt: timestamp("archived_at"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at")
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+});
+
+export const chatRoomMessage = pgTable("chat_room_message", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	chatRoomId: text("chat_room_id")
+		.notNull()
+		.references(() => chattingRoom.id, {
+			onDelete: "cascade",
+		}),
+	senderId: text("sender_id")
+		.notNull()
+		.references(() => profile.id, {
+			onDelete: "cascade",
+		}),
+	content: text("content").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
 		.$onUpdate(() => /* @__PURE__ */ new Date())
@@ -166,44 +208,59 @@ export const schema = {
 	profile,
 	userRequest,
 	chattingRoom,
+	chatRoomMessage,
 	AppState,
 } as const;
 
-// export const relation = defineRelations(schema, (r) => ({
-// 	user: {
-// 		profile: r.one.profile({
-// 			from: r.user.id,
-// 			to: r.profile.userId,
-// 		}),
-// 	},
-// 	profile: {
-// 		user: r.one.user({
-// 			from: r.profile.userId,
-// 			to: r.user.id,
-// 		}),
-// 		request: r.many.userRequest({
-// 			from: r.profile.id,
-// 			to: r.userRequest.profileId,
-// 		}),
-// 		chattingRoom: r.many.chattingRoom({
-// 			from: r.profile.id,
-// 			to: r.chattingRoom.participantIds,
-// 		}),
-// 	},
-// 	userRequest: {
-// 		profile: r.one.profile({
-// 			from: r.userRequest.profileId,
-// 			to: r.profile.id,
-// 		}),
-// 		chattingRoom: r.one.chattingRoom({
-// 			from: r.userRequest.chatId,
-// 			to: r.chattingRoom.id,
-// 		}),
-// 	},
-// 	chattingRoom: {
-// 		participant: r.many.profile({
-// 			from: r.chattingRoom.participantIds,
-// 			to: r.profile.id,
-// 		}),
-// 	},
-// }));
+export const relations = defineRelations(schema, (r) => ({
+	user: {
+		profile: r.one.profile({
+			from: r.user.id,
+			to: r.profile.userId,
+		}),
+	},
+	profile: {
+		user: r.one.user({
+			from: r.profile.userId,
+			to: r.user.id,
+		}),
+		request: r.many.userRequest({
+			from: r.profile.id,
+			to: r.userRequest.profileId,
+		}),
+		chattingRoom: r.many.chattingRoom({
+			from: r.profile.id,
+			to: r.chattingRoom.participantIds,
+		}),
+	},
+	userRequest: {
+		profile: r.one.profile({
+			from: r.userRequest.profileId,
+			to: r.profile.id,
+		}),
+		chattingRoom: r.one.chattingRoom({
+			from: r.userRequest.chatId,
+			to: r.chattingRoom.id,
+		}),
+	},
+	chattingRoom: {
+		participant: r.many.profile({
+			from: r.chattingRoom.participantIds,
+			to: r.profile.id,
+		}),
+		message: r.many.chatRoomMessage({
+			from: r.chattingRoom.id,
+			to: r.chatRoomMessage.chatRoomId,
+		}),
+	},
+	chatRoomMessage: {
+		chattingRoom: r.one.chattingRoom({
+			from: r.chatRoomMessage.chatRoomId,
+			to: r.chattingRoom.id,
+		}),
+		sender: r.one.profile({
+			from: r.chatRoomMessage.senderId,
+			to: r.profile.id,
+		}),
+	},
+}));

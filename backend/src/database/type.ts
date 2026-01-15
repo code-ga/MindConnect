@@ -1,9 +1,8 @@
+import type { Static, TObject, TSchema } from "@sinclair/typebox";
 import { schema } from "./schema";
 import { spreads } from "./speard";
-
 export const dbSchemaTypes = spreads(schema, "select");
 
-export type DBSchemaTypes = typeof dbSchemaTypes;
-
-export type DBSchema = typeof schema;
-export type DBTableName = keyof DBSchema;
+export type SchemaStatic<P extends Record<string, TSchema>> = {
+	[T in keyof P]: Static<P[T]>;
+};

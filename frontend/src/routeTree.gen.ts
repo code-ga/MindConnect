@@ -13,11 +13,12 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RequestsIndexRouteImport } from './routes/requests.index'
-import { Route as RequestsNewRouteImport } from './routes/requests.new'
-import { Route as ProfileCreateRouteImport } from './routes/profile.create'
+import { Route as RequestsIndexRouteImport } from './routes/requests/index'
+import { Route as RequestsNewRouteImport } from './routes/requests/new'
+import { Route as ProfileCreateRouteImport } from './routes/profile/create'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
-import { Route as AdminRequestsRouteImport } from './routes/admin.requests'
+import { Route as ChatIdRouteImport } from './routes/chat/$id'
+import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -59,6 +60,11 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   path: '/demo/tanstack-query',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatIdRoute = ChatIdRouteImport.update({
+  id: '/chat/$id',
+  path: '/chat/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRequestsRoute = AdminRequestsRouteImport.update({
   id: '/admin/requests',
   path: '/admin/requests',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/profile/create': typeof ProfileCreateRoute
   '/requests/new': typeof RequestsNewRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/profile/create': typeof ProfileCreateRoute
   '/requests/new': typeof RequestsNewRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/profile/create': typeof ProfileCreateRoute
   '/requests/new': typeof RequestsNewRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/admin/requests'
+    | '/chat/$id'
     | '/demo/tanstack-query'
     | '/profile/create'
     | '/requests/new'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/admin/requests'
+    | '/chat/$id'
     | '/demo/tanstack-query'
     | '/profile/create'
     | '/requests/new'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/admin/requests'
+    | '/chat/$id'
     | '/demo/tanstack-query'
     | '/profile/create'
     | '/requests/new'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   AdminRequestsRoute: typeof AdminRequestsRoute
+  ChatIdRoute: typeof ChatIdRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ProfileCreateRoute: typeof ProfileCreateRoute
   RequestsNewRoute: typeof RequestsNewRoute
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/$id': {
+      id: '/chat/$id'
+      path: '/chat/$id'
+      fullPath: '/chat/$id'
+      preLoaderRoute: typeof ChatIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/requests': {
       id: '/admin/requests'
       path: '/admin/requests'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   AdminRequestsRoute: AdminRequestsRoute,
+  ChatIdRoute: ChatIdRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ProfileCreateRoute: ProfileCreateRoute,
   RequestsNewRoute: RequestsNewRoute,

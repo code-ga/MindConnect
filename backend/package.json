@@ -16,9 +16,9 @@
     "@sinclair/typebox": "^0.34.45",
     "better-auth": "latest",
     "dotenv": "^17.2.3",
-    "drizzle-kit": "^0.31.8",
-    "drizzle-orm": "^0.45.1",
-    "drizzle-typebox": "^0.3.3",
+    "drizzle-kit": "^1.0.0-beta.11-fc31a5f",
+    "drizzle-orm": "^1.0.0-beta.11-fc31a5f",
+    "drizzle-typebox": "^1.0.0-beta.11-fc31a5f",
     "elysia": "^1.4.22"
   },
   "devDependencies": {

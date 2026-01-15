@@ -8,23 +8,13 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth-context";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/requests")({
 	component: AdminRequests,
 });
-
-interface AdminUserRequest {
-	id: string;
-	userId: string;
-	status: "pending" | "processing" | "accepted" | "rejected";
-	content: string;
-	type: "role_request" | "feature_request";
-	createdAt: Date;
-	processedAt?: Date | null;
-	processedBy?: string | null;
-	processedReason?: string | null;
-	processedNote?: string | null;
-}
 
 function AdminRequests() {
 	const { hasPermission } = useAuth();
@@ -32,13 +22,15 @@ function AdminRequests() {
 	const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
 	const [reason, setReason] = useState("");
 	const [note, setNote] = useState("");
+	const [showSupporter, setShowSupporter] = useState(true);
+	const navigate = useNavigate();
 
 	const { data: requests, isLoading, error } = useQuery({
 		queryKey: ["admin-requests"],
 		queryFn: async () => {
 			const { data, error } = await api.api["user-request"].get();
 			if (error) throw new Error(error.value?.message || "Failed to fetch requests");
-			return data.data as unknown as AdminUserRequest[];
+			return data.data ;
 		},
 		enabled: hasPermission(["manager", "admin"]),
 	});
@@ -54,6 +46,17 @@ function AdminRequests() {
 			setActiveRequestId(null);
 			setReason("");
 			setNote("");
+		},
+	});
+
+	const requestChatMutation = useMutation({
+		mutationFn: async ({ requestId, showSupporter }: { requestId: string; showSupporter: boolean }) => {
+			const { data, error } = await api.api["user-request"]["request-private-chat-room"].post({ requestId, showSupporter });
+			if (error) throw new Error(error.value?.message || "Failed to create chat room");
+			return data.data;
+		},
+		onSuccess: (data) => {
+			navigate({ to: "/chat/$id", params: { id: data.id } });
 		},
 	});
 
@@ -78,7 +81,7 @@ function AdminRequests() {
 							<div className="flex items-center justify-between">
 								<div>
 									<CardTitle className="capitalize">{request.type.replace("_", " ")}</CardTitle>
-									<CardDescription>From User ID: {request.userId} • Created on {new Date(request.createdAt).toLocaleDateString()}</CardDescription>
+									<CardDescription>From User ID: {request.profileId} • Created on {new Date(request.createdAt).toLocaleDateString()}</CardDescription>
 								</div>
 								<div className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${
 									request.status === "pending" ? "bg-yellow-500/10 text-yellow-500" :
@@ -138,7 +141,47 @@ function AdminRequests() {
 									</div>
 								</div>
 							) : request.status === "pending" || request.status === "processing" ? (
-								<Button className="mt-4" onClick={() => setActiveRequestId(request.id)}>Process Request</Button>
+								<div className="mt-4 flex flex-wrap gap-2">
+									<Button onClick={() => setActiveRequestId(request.id)}>Process Request</Button>
+									{request.status === "pending" && (
+										<Button 
+											variant="outline" 
+											onClick={() => processMutation.mutate({ id: request.id, status: "processing" })}
+											disabled={processMutation.isPending}
+										>
+											Mark as Processing
+										</Button>
+									)}
+									<Dialog>
+										<DialogTrigger asChild>
+											<Button variant="secondary">Request Chat</Button>
+										</DialogTrigger>
+										<DialogContent>
+											<DialogHeader>
+												<DialogTitle>Request Chat Room</DialogTitle>
+												<DialogDescription>
+													Create a private chat room to discuss this request with the user.
+												</DialogDescription>
+											</DialogHeader>
+											<div className="flex items-center space-x-2 py-4">
+												<Switch 
+													id="show-supporter" 
+													checked={showSupporter} 
+													onCheckedChange={setShowSupporter}
+												/>
+												<Label htmlFor="show-supporter">Show my profile information to the user</Label>
+											</div>
+											<DialogFooter>
+												<Button 
+													onClick={() => requestChatMutation.mutate({ requestId: request.id, showSupporter })}
+													disabled={requestChatMutation.isPending}
+												>
+													{requestChatMutation.isPending ? "Creating..." : "Create Chat Room"}
+												</Button>
+											</DialogFooter>
+										</DialogContent>
+									</Dialog>
+								</div>
 							) : (
 								<div className="mt-4 p-3 rounded-md bg-muted text-sm space-y-2">
 									{request.processedReason && (
