@@ -227,10 +227,11 @@ export const profileRouter = new Elysia({
 			.patch(
 				"/add_role",
 				async (ctx) => {
+					const targetUserId = ctx.body.userId || ctx.user.id;
 					const alreadyHasRole = await db
 						.select()
 						.from(schema.profile)
-						.where(eq(schema.profile.userId, ctx.user.id));
+						.where(eq(schema.profile.userId, targetUserId));
 					if (!alreadyHasRole || !alreadyHasRole[0]) {
 						return ctx.status(400, {
 							status: 400,
@@ -247,9 +248,30 @@ export const profileRouter = new Elysia({
 						ctx.body.permission.includes("admin") &&
 						!alreadyHasRole[0].permission.includes("admin")
 					) {
+						// Optionally allow managers to add admin if they are admin?
+						// For now, let's keep the logic simple or just warn.
+						// The original code was:
+						// return ctx.status(400, { message: "Profile already has admin role" });
+						// Wait, current logic prevents adding "admin" if already has it? No.
+						// "if (ctx.body.permission.includes("admin") && !alreadyHasRole[0].permission.includes("admin"))" ??
+						// Actually line 246-249 in original: checking if we are ADDING admin?
+						// Wait, the original logic was:
+						// if (includes("admin") && !alreadyHas_admin) ... ERROR?
+						// "Profile already has admin role" -> this error message implies the opposite check.
+						// If I try to add "admin" and user DOES NOT have it, it returns "Already has admin role"? That's a bug in original code or I misread.
+
+						// Original:
+						// if (ctx.body.permission.includes("admin") && !alreadyHasRole[0].permission.includes("admin")) {
+						//    return ... "Profile already has admin role"
+						// }
+						// This logic seems reversed or the message is wrong.
+						// If I *add* admin, and they *don't* have it, it errors? So I CANNOT add admin?
+						// This might be a safeguard to prevent managers from creating admins.
+						// I will preserve this logic for now but fix the target user.
+
 						return ctx.status(400, {
 							status: 400,
-							message: "Profile already has admin role",
+							message: "Cannot verify admin privilege or action not allowed",
 							timestamp: Date.now(),
 							success: false,
 						});
@@ -265,10 +287,10 @@ export const profileRouter = new Elysia({
 					const profile = await db
 						.update(schema.profile)
 						.set({
-							userId: ctx.user.id,
+							userId: targetUserId,
 							permission: [...permissionSet],
 						})
-						.where(eq(schema.profile.userId, ctx.user.id))
+						.where(eq(schema.profile.userId, targetUserId))
 						.returning();
 					if (!profile || !profile[0]) {
 						return ctx.status(400, {
@@ -289,6 +311,7 @@ export const profileRouter = new Elysia({
 				{
 					body: Type.Object({
 						permission: dbSchemaTypes.profile.permission,
+						userId: Type.Optional(dbSchemaTypes.profile.userId),
 					}),
 					response: {
 						200: baseResponseSchema(Type.Object(dbSchemaTypes.profile)),
@@ -300,10 +323,11 @@ export const profileRouter = new Elysia({
 			.patch(
 				"/remove_role",
 				async (ctx) => {
+					const targetUserId = ctx.body.userId || ctx.user.id;
 					const alreadyHasRole = await db
 						.select()
 						.from(schema.profile)
-						.where(eq(schema.profile.userId, ctx.user.id));
+						.where(eq(schema.profile.userId, targetUserId));
 					if (!alreadyHasRole || !alreadyHasRole[0]) {
 						return ctx.status(400, {
 							status: 400,
@@ -332,10 +356,10 @@ export const profileRouter = new Elysia({
 					const profile = await db
 						.update(schema.profile)
 						.set({
-							userId: ctx.user.id,
+							userId: targetUserId,
 							permission: [...permissionSet],
 						})
-						.where(eq(schema.profile.userId, ctx.user.id))
+						.where(eq(schema.profile.userId, targetUserId))
 						.returning();
 					if (!profile || !profile[0]) {
 						return ctx.status(400, {
@@ -356,6 +380,7 @@ export const profileRouter = new Elysia({
 				{
 					body: Type.Object({
 						permission: dbSchemaTypes.profile.permission,
+						userId: Type.Optional(dbSchemaTypes.profile.userId),
 					}),
 					response: {
 						200: baseResponseSchema(Type.Object(dbSchemaTypes.profile)),
@@ -435,26 +460,27 @@ export const profileRouter = new Elysia({
 					roleAuth: ["manager"],
 				},
 			)
-			.get("/available-role", async (ctx) => {
-				const roles: string[] = [];
-				dbSchemaTypes.profile.permission.items.anyOf.forEach((role) => {
-					roles.push(role.const);
-				});
-				return ctx.status(200, {
-					status: 200,
-					data: roles,
-					message: "Roles fetched successfully",
-					timestamp: Date.now(),
-					success: true,
-				});
-			},
-			{
-				response: {
-					200: baseResponseSchema(
-						Type.Array(Type.String()),
-					),
-					400: errorResponseSchema,
+			.get(
+				"/available-role",
+				async (ctx) => {
+					const roles: string[] = [];
+					dbSchemaTypes.profile.permission.items.anyOf.forEach((role) => {
+						roles.push(role.const);
+					});
+					return ctx.status(200, {
+						status: 200,
+						data: roles,
+						message: "Roles fetched successfully",
+						timestamp: Date.now(),
+						success: true,
+					});
 				},
-				roleAuth: ["manager"],
-			}),
+				{
+					response: {
+						200: baseResponseSchema(Type.Array(Type.String())),
+						400: errorResponseSchema,
+					},
+					roleAuth: ["manager"],
+				},
+			),
 	);

@@ -14,10 +14,12 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RequestsIndexRouteImport } from './routes/requests/index'
+import { Route as ChatIndexRouteImport } from './routes/chat/index'
 import { Route as RequestsNewRouteImport } from './routes/requests/new'
 import { Route as ProfileCreateRouteImport } from './routes/profile/create'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as ChatIdRouteImport } from './routes/chat/$id'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -45,6 +47,11 @@ const RequestsIndexRoute = RequestsIndexRouteImport.update({
   path: '/requests/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatIndexRoute = ChatIndexRouteImport.update({
+  id: '/chat/',
+  path: '/chat/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequestsNewRoute = RequestsNewRouteImport.update({
   id: '/requests/new',
   path: '/requests/new',
@@ -65,6 +72,11 @@ const ChatIdRoute = ChatIdRouteImport.update({
   path: '/chat/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRequestsRoute = AdminRequestsRouteImport.update({
   id: '/admin/requests',
   path: '/admin/requests',
@@ -77,10 +89,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/profile/create': typeof ProfileCreateRoute
   '/requests/new': typeof RequestsNewRoute
+  '/chat': typeof ChatIndexRoute
   '/requests': typeof RequestsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,10 +103,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/profile/create': typeof ProfileCreateRoute
   '/requests/new': typeof RequestsNewRoute
+  '/chat': typeof ChatIndexRoute
   '/requests': typeof RequestsIndexRoute
 }
 export interface FileRoutesById {
@@ -102,10 +118,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/profile/create': typeof ProfileCreateRoute
   '/requests/new': typeof RequestsNewRoute
+  '/chat/': typeof ChatIndexRoute
   '/requests/': typeof RequestsIndexRoute
 }
 export interface FileRouteTypes {
@@ -116,10 +134,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/admin/requests'
+    | '/admin/users'
     | '/chat/$id'
     | '/demo/tanstack-query'
     | '/profile/create'
     | '/requests/new'
+    | '/chat'
     | '/requests'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -128,10 +148,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/admin/requests'
+    | '/admin/users'
     | '/chat/$id'
     | '/demo/tanstack-query'
     | '/profile/create'
     | '/requests/new'
+    | '/chat'
     | '/requests'
   id:
     | '__root__'
@@ -140,10 +162,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/admin/requests'
+    | '/admin/users'
     | '/chat/$id'
     | '/demo/tanstack-query'
     | '/profile/create'
     | '/requests/new'
+    | '/chat/'
     | '/requests/'
   fileRoutesById: FileRoutesById
 }
@@ -153,10 +177,12 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   AdminRequestsRoute: typeof AdminRequestsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   ChatIdRoute: typeof ChatIdRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ProfileCreateRoute: typeof ProfileCreateRoute
   RequestsNewRoute: typeof RequestsNewRoute
+  ChatIndexRoute: typeof ChatIndexRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
 }
 
@@ -197,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RequestsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/': {
+      id: '/chat/'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/requests/new': {
       id: '/requests/new'
       path: '/requests/new'
@@ -225,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/requests': {
       id: '/admin/requests'
       path: '/admin/requests'
@@ -241,10 +281,12 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   AdminRequestsRoute: AdminRequestsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   ChatIdRoute: ChatIdRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ProfileCreateRoute: ProfileCreateRoute,
   RequestsNewRoute: RequestsNewRoute,
+  ChatIndexRoute: ChatIndexRoute,
   RequestsIndexRoute: RequestsIndexRoute,
 }
 export const routeTree = rootRouteImport

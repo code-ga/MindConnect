@@ -1,10 +1,22 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Menu, Network, X, LayoutDashboard, ClipboardList, Settings, ShieldCheck } from "lucide-react";
+import {
+	Home,
+	Menu,
+	Network,
+	X,
+	LayoutDashboard,
+	ClipboardList,
+	Settings,
+	ShieldCheck,
+	Users,
+	MessageCircle,
+} from "lucide-react";
 import { useState } from "react";
 import { ModeToggle } from "./mode-toggle";
-import logo from "../logo.svg"
+import logo from "../logo.svg";
 
 import { RoleGuard } from "./role-guard";
+import { CreatePublicChatDialog } from "./create-public-chat-dialog";
 
 export default function Header() {
 	const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +42,8 @@ export default function Header() {
 						/>
 					</Link>
 				</h1>
-				<div className="ml-auto">
+				<div className="ml-auto flex items-center gap-2">
+					<CreatePublicChatDialog />
 					<ModeToggle />
 				</div>
 			</header>
@@ -105,6 +118,19 @@ export default function Header() {
 						<span className="font-medium">Settings</span>
 					</Link>
 
+					<Link
+						to="/chat"
+						onClick={() => setIsOpen(false)}
+						className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+						activeProps={{
+							className:
+								"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
+						}}
+					>
+						<MessageCircle size={20} />
+						<span className="font-medium">My Chats</span>
+					</Link>
+
 					<RoleGuard requiredPermissions={["manager", "admin"]}>
 						<Link
 							to="/admin/requests"
@@ -116,12 +142,27 @@ export default function Header() {
 							}}
 						>
 							<ShieldCheck size={20} />
-							<span className="font-medium">Admin Panel</span>
+							<span className="font-medium">Requests</span>
+						</Link>
+
+						<Link
+							to="/admin/users"
+							onClick={() => setIsOpen(false)}
+							className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+							activeProps={{
+								className:
+									"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
+							}}
+						>
+							<Users size={20} />
+							<span className="font-medium">User Management</span>
 						</Link>
 					</RoleGuard>
 
 					<div className="my-4 border-t pt-4">
-						<p className="px-3 text-xs font-semibold text-muted-foreground uppercase mb-2">Development</p>
+						<p className="px-3 text-xs font-semibold text-muted-foreground uppercase mb-2">
+							Development
+						</p>
 						<Link
 							to="/demo/tanstack-query"
 							onClick={() => setIsOpen(false)}

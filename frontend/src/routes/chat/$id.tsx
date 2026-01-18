@@ -14,7 +14,7 @@ function ChatRoom() {
 	const { data: chatroom, isLoading: isLoadingRoom } = useQuery({
 		queryKey: ["chatroom", id],
 		queryFn: async () => {
-			const { data, error } = await api.api.chatroom[id].get();
+			const { data, error } = await api.api.chatroom({id}).get();
 			if (error) throw new Error(error.value?.message || "Failed to fetch chatroom");
 			return data.data;
 		},
@@ -23,7 +23,7 @@ function ChatRoom() {
 	const { data: messages, isLoading: isLoadingMessages } = useQuery({
 		queryKey: ["chatroom-messages", id],
 		queryFn: async () => {
-			const { data, error } = await api.api.chatroom[id].messages.get();
+			const { data, error } = await api.api.chatroom({id}).messages.get();
 			if (error) throw new Error(error.value?.message || "Failed to fetch messages");
 			return data.data;
 		},

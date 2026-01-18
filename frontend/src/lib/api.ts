@@ -7,3 +7,4 @@ export const api = treaty<App>(BACKEND_URL, {
 		credentials: "include",
 	},
 });
+export type { databaseTypes } from "@api/index";

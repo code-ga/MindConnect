@@ -142,12 +142,14 @@ export const chatRoomType = pgEnum("chat_room_type", [
 	"private-chat-for-therapy",
 	"group-chat-for-support",
 	"group-chat-for-therapy",
+	"public-chat-room",
 ]);
 
 export const chattingRoom = pgTable("chatting_room", {
 	id: text("id")
 		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
+	name: text("name"),
 	participantIds: text("participant_ids").notNull().array().default([]),
 	isHiddenParticipantProfile: boolean("is_hidden_participant_profile")
 		.notNull()
@@ -155,6 +157,13 @@ export const chattingRoom = pgTable("chatting_room", {
 	status: chatRoomStatus("status").notNull().default("active"),
 	type: chatRoomType("type").notNull().default("private-chat-for-support"),
 	isGroupChat: boolean("is_group_chat").notNull().default(false),
+	ownerId: text("owner_id")
+		.notNull()
+		.references(() => profile.id, {
+			onDelete: "cascade",
+		}),
+
+	description: text("description"),
 
 	archivedAt: timestamp("archived_at"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -251,6 +260,10 @@ export const relations = defineRelations(schema, (r) => ({
 		message: r.many.chatRoomMessage({
 			from: r.chattingRoom.id,
 			to: r.chatRoomMessage.chatRoomId,
+		}),
+		owner: r.one.profile({
+			from: r.chattingRoom.ownerId,
+			to: r.profile.id,
 		}),
 	},
 	chatRoomMessage: {

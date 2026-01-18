@@ -97,7 +97,7 @@ export const userRequestRouter = new Elysia({
 	.guard({ roleAuth: ["manager"] }, (app) =>
 		app
 			.get(
-				"/",
+				"/all",
 				async (ctx) => {
 					const requests = await db.select().from(schema.userRequest);
 					return ctx.status(200, {
@@ -321,6 +321,9 @@ export const userRequestRouter = new Elysia({
 							status: "active",
 							type: "private-chat-for-support",
 							isGroupChat: false,
+							description: `Private chat room for user request ${ctx.body.requestId}`,
+							name: `Private chat room for user request ${ctx.body.requestId}`,
+							ownerId: ctx.profile.id, // for reviewer can directly archive chat room
 						})
 						.returning();
 					if (!room[0]) {

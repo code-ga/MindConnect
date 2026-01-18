@@ -11,7 +11,7 @@ import { appStateService } from "./services/AppState";
 export const app = new Elysia()
 	.use(
 		cors({
-			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
 			credentials: true,
 		}),
 	)
@@ -31,3 +31,5 @@ export const app = new Elysia()
 console.log(`Listening on ${app.server?.url}`);
 
 export type App = typeof app;
+export * as databaseTypes from "./database/type";
+export * as requestTypes from "./types";

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist",
+    "build": "bun build src/index.ts --compile --minify --target bun --outdir dist",
     "start": "bun dist/index.js",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
