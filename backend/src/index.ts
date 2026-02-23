@@ -7,6 +7,7 @@ import { Elysia } from "elysia";
 import { OpenAPI } from "./libs/auths/openAPI";
 import { apiRouter } from "./routes";
 import { appStateService } from "./services/AppState";
+import { socketService } from "./libs/socket";
 
 export const app = new Elysia()
 	.use(
@@ -26,6 +27,7 @@ export const app = new Elysia()
 	)
 	.use(appStateService)
 	.use(apiRouter)
+	.use(socketService)
 	.listen(3001);
 
 console.log(`Listening on ${app.server?.url}`);

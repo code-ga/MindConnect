@@ -5,6 +5,8 @@ import { agentManagerService } from "../services/agentManager";
 import { profileRouter } from "./profile";
 import { userRequestRouter } from "./user-request";
 import { chatroomRouter } from "./chatroom";
+import { notificationRouter } from "./notification";
+import { matchRouter } from "./match";
 
 const apiRouter = new Elysia({ prefix: "/api" })
 	.use(agentManagerService)
@@ -12,6 +14,8 @@ const apiRouter = new Elysia({ prefix: "/api" })
 	.use(healthRoutes)
 	.use(profileRouter)
 	.use(userRequestRouter)
-	.use(chatroomRouter);
+	.use(chatroomRouter)
+	.use(notificationRouter)
+	.use(matchRouter);
 
 export { apiRouter };

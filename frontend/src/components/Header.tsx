@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ModeToggle } from "./mode-toggle";
+import { NotificationBell } from "./notification-bell";
 import logo from "../logo.svg";
 
 import { RoleGuard } from "./role-guard";
@@ -43,6 +44,7 @@ export default function Header() {
 					</Link>
 				</h1>
 				<div className="ml-auto flex items-center gap-2">
+					<NotificationBell />
 					<CreatePublicChatDialog />
 					<ModeToggle />
 				</div>

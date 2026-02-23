@@ -91,6 +91,13 @@ export const profile = pgTable("profile", {
 	username: text("username").notNull(),
 	permission: permissionEnum().array().default(["user"]).notNull(),
 
+	lastSeen: timestamp("last_seen").defaultNow().notNull(),
+	isMatching: boolean("is_matching").default(false).notNull(),
+	matchingRoles: permissionEnum()
+		.array()
+		.default(["listener", "psychologist", "therapist"])
+		.notNull(),
+
 	updatedAt: timestamp("updated_at")
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
@@ -193,6 +200,22 @@ export const chatRoomMessage = pgTable("chat_room_message", {
 		.notNull(),
 });
 
+export const notification = pgTable("notification", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	profileId: text("profile_id")
+		.notNull()
+		.references(() => profile.id, { onDelete: "cascade" }),
+	type: text("type").notNull(), // e.g., 'role_added', 'message_received'
+	content: text("content").notNull(),
+	readStatus: boolean("read_status").default(false).notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at")
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+});
+
 export interface AppState {
 	createNewAdmin: boolean;
 }
@@ -218,6 +241,7 @@ export const schema = {
 	userRequest,
 	chattingRoom,
 	chatRoomMessage,
+	notification,
 	AppState,
 } as const;
 
@@ -240,6 +264,10 @@ export const relations = defineRelations(schema, (r) => ({
 		chattingRoom: r.many.chattingRoom({
 			from: r.profile.id,
 			to: r.chattingRoom.participantIds,
+		}),
+		notifications: r.many.notification({
+			from: r.profile.id,
+			to: r.notification.profileId,
 		}),
 	},
 	userRequest: {
@@ -273,6 +301,12 @@ export const relations = defineRelations(schema, (r) => ({
 		}),
 		sender: r.one.profile({
 			from: r.chatRoomMessage.senderId,
+			to: r.profile.id,
+		}),
+	},
+	notification: {
+		profile: r.one.profile({
+			from: r.notification.profileId,
 			to: r.profile.id,
 		}),
 	},

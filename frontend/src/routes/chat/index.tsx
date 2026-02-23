@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MatchingDialog } from "@/components/matching-dialog";
 
 export const Route = createFileRoute("/chat/")({
 	component: ChatList,
@@ -122,39 +123,42 @@ function ChatList() {
 					</Tabs>
 				</div>
 
-				<div className="flex p-1 bg-muted rounded-lg w-fit">
-					<Button
-						variant={filter === "all" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilter("all")}
-						className="h-8"
-					>
-						All
-					</Button>
-					<Button
-						variant={filter === "support" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilter("support")}
-						className="h-8"
-					>
-						Support
-					</Button>
-					<Button
-						variant={filter === "therapy" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilter("therapy")}
-						className="h-8"
-					>
-						Therapy
-					</Button>
-					<Button
-						variant={filter === "public" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilter("public")}
-						className="h-8"
-					>
-						Public
-					</Button>
+				<div className="flex justify-between items-center bg-muted p-1 rounded-lg w-full">
+					<div className="flex">
+						<Button
+							variant={filter === "all" ? "default" : "ghost"}
+							size="sm"
+							onClick={() => setFilter("all")}
+							className="h-8"
+						>
+							All
+						</Button>
+						<Button
+							variant={filter === "support" ? "default" : "ghost"}
+							size="sm"
+							onClick={() => setFilter("support")}
+							className="h-8"
+						>
+							Support
+						</Button>
+						<Button
+							variant={filter === "therapy" ? "default" : "ghost"}
+							size="sm"
+							onClick={() => setFilter("therapy")}
+							className="h-8"
+						>
+							Therapy
+						</Button>
+						<Button
+							variant={filter === "public" ? "default" : "ghost"}
+							size="sm"
+							onClick={() => setFilter("public")}
+							className="h-8"
+						>
+							Public
+						</Button>
+					</div>
+					<MatchingDialog />
 				</div>
 			</div>
 
