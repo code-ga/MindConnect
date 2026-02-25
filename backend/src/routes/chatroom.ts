@@ -382,56 +382,56 @@ export const chatroomRouter = new Elysia({
 						404: errorResponseSchema,
 					},
 				},
+			)
+			.post(
+				"/",
+				async (ctx) => {
+					if (!ctx.profile) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Profile not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+					const chatroom = await db
+						.insert(schema.chattingRoom)
+						.values({
+							name: ctx.body.name,
+							isGroupChat: ctx.body.isGroupChat,
+							participantIds: [ctx.profile.id],
+							type: ctx.body.type,
+							description: ctx.body.description,
+							ownerId: ctx.profile.id,
+						})
+						.returning();
+					if (!chatroom || !chatroom[0]) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Failed to create chatroom",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+					return ctx.status(200, {
+						status: 200,
+						data: chatroom[0],
+						message: "Chatroom created successfully",
+						timestamp: Date.now(),
+						success: true,
+					});
+				},
+				{
+					body: Type.Object({
+						name: Type.String(),
+						description: Type.String(),
+						isGroupChat: Type.Boolean(),
+						type: Type.Union([Type.Literal("public-chat-room")]),
+					}),
+					response: {
+						200: baseResponseSchema(Type.Object(dbSchemaTypes.chattingRoom)),
+						400: errorResponseSchema,
+					},
+				},
 			),
-	)
-	.post(
-		"/",
-		async (ctx) => {
-			if (!ctx.profile) {
-				return ctx.status(400, {
-					status: 400,
-					message: "Profile not found",
-					timestamp: Date.now(),
-					success: false,
-				});
-			}
-			const chatroom = await db
-				.insert(schema.chattingRoom)
-				.values({
-					name: ctx.body.name,
-					isGroupChat: ctx.body.isGroupChat,
-					participantIds: [ctx.profile.id],
-					type: ctx.body.type,
-					description: ctx.body.description,
-					ownerId: ctx.profile.id,
-				})
-				.returning();
-			if (!chatroom || !chatroom[0]) {
-				return ctx.status(400, {
-					status: 400,
-					message: "Failed to create chatroom",
-					timestamp: Date.now(),
-					success: false,
-				});
-			}
-			return ctx.status(200, {
-				status: 200,
-				data: chatroom[0],
-				message: "Chatroom created successfully",
-				timestamp: Date.now(),
-				success: true,
-			});
-		},
-		{
-			body: Type.Object({
-				name: Type.String(),
-				description: Type.String(),
-				isGroupChat: Type.Boolean(),
-				type: Type.Union([Type.Literal("public-chat-room")]),
-			}),
-			response: {
-				200: baseResponseSchema(Type.Object(dbSchemaTypes.chattingRoom)),
-				400: errorResponseSchema,
-			},
-		},
 	);

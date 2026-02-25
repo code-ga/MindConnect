@@ -11,6 +11,15 @@ interface MatchingUser {
 
 class MatchingService {
 	private queue: MatchingUser[] = [];
+	private processingInterval: NodeJS.Timeout | null = null;
+	private readonly MATCH_INTERVAL = 1000; // Check every 1 second
+
+	constructor() {
+		// Start the periodic matching process
+		this.processingInterval = setInterval(() => {
+			void this.processQueue();
+		}, this.MATCH_INTERVAL);
+	}
 
 	async startMatching(profileId: string, roles: Role[]) {
 		if (this.queue.find((u) => u.profileId === profileId)) {
@@ -20,15 +29,19 @@ class MatchingService {
 		const user = { profileId, roles, startedAt: Date.now() };
 		this.queue.push(user);
 
-		// Try to match
-		void this.processQueue();
-
 		return { success: true, message: "Started matching" };
 	}
 
 	stopMatching(profileId: string) {
 		this.queue = this.queue.filter((u) => u.profileId !== profileId);
 		return { success: true, message: "Stopped matching" };
+	}
+
+	destroy() {
+		if (this.processingInterval) {
+			clearInterval(this.processingInterval);
+			this.processingInterval = null;
+		}
 	}
 
 	private async processQueue(): Promise<void> {
