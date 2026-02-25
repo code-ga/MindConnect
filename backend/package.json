@@ -14,13 +14,14 @@
 	"dependencies": {
 		"@elysiajs/cors": "^1.4.1",
 		"@elysiajs/openapi": "^1.4.13",
+		"@sinclair/typebox": "catalog:",
 		"better-auth": "latest",
 		"dotenv": "^17.2.3",
 		"drizzle-kit": "^1.0.0-beta.11-fc31a5f",
 		"drizzle-orm": "^1.0.0-beta.11-fc31a5f",
 		"drizzle-typebox": "^1.0.0-beta.11-fc31a5f",
 		"elysia": "catalog:",
-		"@sinclair/typebox": "catalog:"
+		"pg": "^8.18.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.10",
