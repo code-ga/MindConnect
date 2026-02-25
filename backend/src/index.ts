@@ -9,6 +9,8 @@ import { apiRouter } from "./routes";
 import { appStateService } from "./services/AppState";
 import { socketService } from "./libs/socket";
 
+const PORT = process.env.PORT || 3001;
+
 export const app = new Elysia()
 	.use(
 		cors({
@@ -28,7 +30,7 @@ export const app = new Elysia()
 	.use(appStateService)
 	.use(apiRouter)
 	.use(socketService)
-	.listen(3001);
+	.listen(PORT);
 
 console.log(`Listening on ${app.server?.url}`);
 
