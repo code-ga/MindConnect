@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { UserPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -9,19 +8,20 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useSocket } from "@/hooks/useSocket";
+import { Loader2, UserPlus } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function MatchingDialog() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isMatching, setIsMatching] = useState(false);
 	const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-	const queryClient = useQueryClient();
+	// const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const { lastMessage } = useSocket();
 

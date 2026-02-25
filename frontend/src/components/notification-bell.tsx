@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -7,11 +7,12 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
-import { useSocket } from "@/hooks/useSocket";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 export function NotificationBell() {
 	const queryClient = useQueryClient();
@@ -43,6 +44,13 @@ export function NotificationBell() {
 	}, [lastMessage, queryClient]);
 
 	const unreadCount = notifications?.filter((n) => !n.readStatus).length || 0;
+	if (isLoading) {
+		return (
+			<Button variant="ghost" size="icon" className="relative">
+				<Loader2 className="h-5 w-5 animate-spin" />
+			</Button>
+		);
+	}
 
 	return (
 		<Dialog>

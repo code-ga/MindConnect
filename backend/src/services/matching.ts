@@ -1,6 +1,5 @@
 import { db } from "../database";
 import { schema } from "../database/schema";
-import { eq } from "drizzle-orm";
 
 type Role = "listener" | "psychologist" | "therapist";
 

@@ -1,11 +1,11 @@
-import { Elysia, t, type Static } from "elysia";
-import { authenticationMiddleware } from "../middleware/auth";
+import { eq, sql } from "drizzle-orm";
+import { Elysia, t } from "elysia";
 import { db } from "../database";
 import { schema } from "../database/schema";
-import { eq, sql } from "drizzle-orm";
-import { dbSchemaTypes } from "../database/type";
+import { dbSchemaTypes, type SchemaStatic } from "../database/type";
+import { authenticationMiddleware } from "../middleware/auth";
 
-type Profile = Static<typeof dbSchemaTypes.profile>;
+type Profile = SchemaStatic<typeof dbSchemaTypes.profile>;
 
 // Map profileId to Socket IDs/Instances
 export const userSockets = new Map<string, string>();
@@ -14,7 +14,7 @@ export const socketService = new Elysia()
 	.use(authenticationMiddleware)
 	.ws("/ws", {
 		async open(ws) {
-			const profile = (ws.data as any).profile as Profile;
+			const profile = ws.data.profile as Profile;
 			if (!profile) {
 				ws.send({ type: "error", message: "Unauthorized" });
 				ws.close();
@@ -47,7 +47,7 @@ export const socketService = new Elysia()
 
 			console.log(`User ${profile.username} (${profile.id}) connected via WS`);
 		},
-		async message(ws, message) {
+		async message(ws, message: any) {
 			const profile = (ws.data as any).profile as Profile;
 			if (!profile) return;
 
@@ -92,7 +92,7 @@ export const socketService = new Elysia()
 			}
 		},
 		close(ws) {
-			const profile = (ws.data as any).profile as Profile;
+			const profile = ws.data.profile as Profile;
 			if (profile) {
 				userSockets.delete(profile.id);
 				console.log(`User ${profile.username} disconnected from WS`);
@@ -104,6 +104,7 @@ export const socketService = new Elysia()
 				payload: t.Optional(t.Any()),
 			}),
 		},
+		userAuth: true,
 	});
 
 // Helper to send notification to a specific user

@@ -1,4 +1,4 @@
-import type { Static, TObject, TSchema } from "@sinclair/typebox";
+import type { Static, TSchema } from "@sinclair/typebox";
 import { schema } from "./schema";
 import { spreads } from "./speard";
 export const dbSchemaTypes = spreads(schema, "select");
