@@ -1,5 +1,6 @@
 import { db } from "../database";
 import { schema } from "../database/schema";
+import { broadcastToUser } from "./broadcast";
 
 type Role = "listener" | "psychologist" | "therapist";
 
@@ -60,7 +61,7 @@ class MatchingService {
 					this.queue.splice(i, 1);
 
 					await this.createMatch(u1.profileId, u2.profileId);
-					return this.processQueue();
+					// return this.processQueue();
 				}
 			}
 		}
@@ -85,17 +86,14 @@ class MatchingService {
 		if (room) {
 			console.log(`Matched ${p1Id} and ${p2Id} in room ${room.id}`);
 
-			// Notify users via WS
-			// We import app dynamically to avoid circular dependencies if any
-			const { app } = await import("../index");
-
-			const msg = JSON.stringify({
+			// Notify users via WebSocket broadcast
+			const matchNotification = {
 				type: "match_success",
 				payload: { chatRoomId: room.id },
-			});
+			};
 
-			app.server?.publish(`user:${p1Id}`, msg);
-			app.server?.publish(`user:${p2Id}`, msg);
+			broadcastToUser(p1Id, matchNotification);
+			broadcastToUser(p2Id, matchNotification);
 		}
 	}
 }

@@ -7,9 +7,6 @@ import { authenticationMiddleware } from "../middleware/auth";
 
 type Profile = SchemaStatic<typeof dbSchemaTypes.profile>;
 
-// Map profileId to Socket IDs/Instances
-export const userSockets = new Map<string, string>();
-
 export const socketService = new Elysia()
 	.use(authenticationMiddleware)
 	.ws("/ws", {
@@ -20,9 +17,6 @@ export const socketService = new Elysia()
 				ws.close();
 				return;
 			}
-
-			// Map profile ID to the WebSocket ID
-			userSockets.set(profile.id, ws.id);
 
 			// Subscribe to personal topic and all chatroom topics user is in
 			const chatrooms = await db
@@ -59,42 +53,10 @@ export const socketService = new Elysia()
 
 				ws.send({ type: "heartbeat_ack", timestamp: Date.now() });
 			}
-
-			if (message.type === "chat_message") {
-				const { chatRoomId, content } = message.payload as {
-					chatRoomId: string;
-					content: string;
-				};
-
-				// 1. Save message to DB
-				const [newMessage] = await db
-					.insert(schema.chatRoomMessage)
-					.values({
-						chatRoomId,
-						senderId: profile.id,
-						content,
-					})
-					.returning();
-
-				if (newMessage) {
-					// 2. Broadcast to the room topic
-					ws.publish(chatRoomId, {
-						type: "new_message",
-						payload: newMessage,
-					});
-
-					// Also send to self (optional, if frontend doesn't optimistcally add)
-					ws.send({
-						type: "new_message",
-						payload: newMessage,
-					});
-				}
-			}
 		},
 		close(ws) {
 			const profile = ws.data.profile as Profile;
 			if (profile) {
-				userSockets.delete(profile.id);
 				console.log(`User ${profile.username} disconnected from WS`);
 			}
 		},

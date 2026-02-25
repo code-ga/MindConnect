@@ -92,18 +92,19 @@ function ChatRoom() {
 		}
 	}, [messages]);
 
-	const handleSendMessage = (e: React.FormEvent) => {
+	const handleSendMessage = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!messageText.trim()) return;
 
-		sendMessage({
-			type: "chat_message",
-			payload: {
-				chatRoomId: id,
+		try {
+			const { error } = await api.api.chatroom({ id }).messages.post({
 				content: messageText,
-			},
-		});
-		setMessageText("");
+			});
+			if (error) throw new Error("Failed to send message");
+			setMessageText("");
+		} catch (err) {
+			console.error("Error sending message:", err);
+		}
 	};
 
 	if (isLoadingRoom || isLoadingMessages || isLoadingParticipants)

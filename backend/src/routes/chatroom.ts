@@ -252,6 +252,85 @@ export const chatroomRouter = new Elysia({
 				},
 			)
 			.post(
+				"/:id/messages",
+				async (ctx) => {
+					if (!ctx.profile) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Profile not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+					const chatroom = await db
+						.select()
+						.from(schema.chattingRoom)
+						.where(eq(schema.chattingRoom.id, ctx.params.id));
+					if (!chatroom || !chatroom[0]) {
+						return ctx.status(404, {
+							status: 404,
+							message: "Chatroom not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+					if (!chatroom[0].participantIds.includes(ctx.profile.id)) {
+						return ctx.status(403, {
+							status: 403,
+							message: "You are not a participant of this chatroom",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+
+					const [newMessage] = await db
+						.insert(schema.chatRoomMessage)
+						.values({
+							chatRoomId: ctx.params.id,
+							senderId: ctx.profile.id,
+							content: ctx.body.content,
+						})
+						.returning();
+
+					if (!newMessage) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Failed to save message",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+
+					// Broadcast to WebSocket subscribers in the room
+					ctx.server?.publish(
+						ctx.params.id,
+						JSON.stringify({
+							type: "new_message",
+							payload: newMessage,
+						}),
+					);
+
+					return ctx.status(201, {
+						status: 201,
+						data: newMessage,
+						message: "Message sent successfully",
+						timestamp: Date.now(),
+						success: true,
+					});
+				},
+				{
+					body: Type.Object({
+						content: Type.String(),
+					}),
+					response: {
+						201: baseResponseSchema(Type.Object(dbSchemaTypes.chatRoomMessage)),
+						400: errorResponseSchema,
+						403: errorResponseSchema,
+						404: errorResponseSchema,
+					},
+				},
+			)
+			.post(
 				"/:id/join",
 				async (ctx) => {
 					if (!ctx.profile) {

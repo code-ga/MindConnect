@@ -8,6 +8,7 @@ import { OpenAPI } from "./libs/auths/openAPI";
 import { apiRouter } from "./routes";
 import { appStateService } from "./services/AppState";
 import { socketService } from "./libs/socket";
+import { setBroadcastServer } from "./services/broadcast";
 
 const PORT = process.env.PORT || 3001;
 
@@ -31,6 +32,9 @@ export const app = new Elysia()
 	.use(apiRouter)
 	.use(socketService)
 	.listen(PORT);
+
+// Initialize broadcast server for services to use
+setBroadcastServer(app.server);
 
 console.log(`Listening on ${app.server?.url}`);
 
