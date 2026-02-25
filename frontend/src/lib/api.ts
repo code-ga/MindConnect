@@ -1,4 +1,4 @@
-import type { App } from "@api/index";
+import type { App } from "@mindconnect/backend";
 import { BACKEND_URL } from "@/constants";
 import { treaty } from "@elysiajs/eden";
 
@@ -7,4 +7,4 @@ export const api = treaty<App>(BACKEND_URL, {
 		credentials: "include",
 	},
 });
-export type { databaseTypes } from "@api/index";
+export type { databaseTypes } from "@mindconnect/backend";

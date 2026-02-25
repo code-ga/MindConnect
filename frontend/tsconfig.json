@@ -1,5 +1,5 @@
 {
-  "include": ["**/*.ts", "**/*.tsx","../backend/**/*.ts"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -21,12 +21,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
-    "rootDirs": ["./src", "../backend/src"],
+    "rootDirs": ["./src"],
     "paths": {
       "@/*": ["./src/*"],
-      "@api/*": ["../backend/src/*"],
-      "elysia": ["../backend/node_modules/elysia"],
-      "@sinclair/typebox": ["../backend/node_modules/@sinclair/typebox"]
     }
   }
 }

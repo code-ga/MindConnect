@@ -94,8 +94,8 @@ export interface FileRoutesByFullPath {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/profile/create': typeof ProfileCreateRoute
   '/requests/new': typeof RequestsNewRoute
-  '/chat': typeof ChatIndexRoute
-  '/requests': typeof RequestsIndexRoute
+  '/chat/': typeof ChatIndexRoute
+  '/requests/': typeof RequestsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -139,8 +139,8 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/profile/create'
     | '/requests/new'
-    | '/chat'
-    | '/requests'
+    | '/chat/'
+    | '/requests/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -219,14 +219,14 @@ declare module '@tanstack/react-router' {
     '/requests/': {
       id: '/requests/'
       path: '/requests'
-      fullPath: '/requests'
+      fullPath: '/requests/'
       preLoaderRoute: typeof RequestsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat/': {
       id: '/chat/'
       path: '/chat'
-      fullPath: '/chat'
+      fullPath: '/chat/'
       preLoaderRoute: typeof ChatIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
