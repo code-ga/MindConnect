@@ -24,7 +24,7 @@ function ChatRoom() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [messageText, setMessageText] = useState("");
-	const { lastMessage, sendMessage } = useSocket();
+	const { lastMessage } = useSocket();
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	const { data: chatroom, isLoading: isLoadingRoom } = useQuery({
