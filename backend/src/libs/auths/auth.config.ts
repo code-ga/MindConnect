@@ -38,4 +38,21 @@ export const auth = betterAuth({
 	},
 	secret: process.env.BETTER_AUTH_SECRET!,
 	plugins: [openAPI()],
+	advanced: {
+		cookies: {
+			session_token: {
+				attributes: {
+					// Set custom cookie attributes
+					sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
+					secure: process.env.NODE_ENV === "production",
+				},
+			},
+			state: {
+				attributes: {
+					sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
+					secure: process.env.NODE_ENV === "production",
+				},
+			},
+		},
+	},
 });
