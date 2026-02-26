@@ -2,16 +2,15 @@ import { eq, sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import { db } from "../database";
 import { schema } from "../database/schema";
-import { dbSchemaTypes, type SchemaStatic } from "../database/type";
+// import { type SchemaStatic } from "../database/type";
 import { authenticationMiddleware } from "../middleware/auth";
-
-type Profile = SchemaStatic<typeof dbSchemaTypes.profile>;
+import { matchingService } from "../services/matching";
 
 export const socketService = new Elysia()
 	.use(authenticationMiddleware)
 	.ws("/ws", {
 		async open(ws) {
-			const profile = ws.data.profile as Profile;
+			const profile = ws.data.profile;
 			if (!profile) {
 				ws.send({ type: "error", message: "Unauthorized" });
 				ws.close();
@@ -39,10 +38,13 @@ export const socketService = new Elysia()
 				.set({ lastSeen: new Date() })
 				.where(eq(schema.profile.id, profile.id));
 
+			// Restore matching state if marked as matching in DB (for reconnect and crash recovery)
+			await matchingService.restoreState(profile);
+
 			console.log(`User ${profile.username} (${profile.id}) connected via WS`);
 		},
 		async message(ws, message: any) {
-			const profile = (ws.data as any).profile as Profile;
+			const profile = ws.data.profile;
 			if (!profile) return;
 
 			if (message.type === "heartbeat") {
@@ -51,11 +53,14 @@ export const socketService = new Elysia()
 					.set({ lastSeen: new Date() })
 					.where(eq(schema.profile.id, profile.id));
 
+				// Update waiter heartbeat if they are in working pool
+				matchingService.updateWaiterHeartbeat(profile.id);
+
 				ws.send({ type: "heartbeat_ack", timestamp: Date.now() });
 			}
 		},
 		close(ws) {
-			const profile = ws.data.profile as Profile;
+			const profile = ws.data.profile;
 			if (profile) {
 				console.log(`User ${profile.username} disconnected from WS`);
 			}

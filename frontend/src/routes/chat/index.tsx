@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
+import { useAuth } from "@/components/auth-context";
 import { Button } from "@/components/ui/button";
 import {
 	Users,
@@ -23,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatchingDialog } from "@/components/matching-dialog";
+import { WaiterStatusPanel } from "@/components/waiter-status-panel";
 
 export const Route = createFileRoute("/chat/")({
 	component: ChatList,
@@ -34,6 +36,7 @@ function ChatList() {
 		"all" | "support" | "therapy" | "public"
 	>("all");
 	const queryClient = useQueryClient();
+	const { profile, hasPermission } = useAuth();
 
 	const {
 		data: chatrooms,
@@ -98,8 +101,15 @@ function ChatList() {
 			: "Unknown";
 	};
 
+	// Check if user has waiter roles
+	const isWaiter = hasPermission?.(["listener", "psychologist", "therapist"]) ?? false;
+
 	return (
 		<div className="container py-10 space-y-6">
+			{isWaiter && profile && (
+				<WaiterStatusPanel userRoles={profile.permission} />
+			)}
+
 			<div className="flex flex-col gap-4">
 				<div className="flex justify-between items-center">
 					<div>

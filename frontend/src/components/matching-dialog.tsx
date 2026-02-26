@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -9,32 +8,57 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
+type Role = "listener" | "psychologist" | "therapist";
+
 export function MatchingDialog() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isMatching, setIsMatching] = useState(false);
-	const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-	// const queryClient = useQueryClient();
+	const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 	const navigate = useNavigate();
 	const { lastMessage } = useSocket();
 
+	// Fetch status on mount to restore state after page refresh
+	const { data: statusData } = useQuery({
+		queryKey: ["match-status"],
+		queryFn: async () => {
+			const { data, error } = await api.api.match.status.get();
+			if (error) throw new Error(getErrorMessage(error));
+			return data.data;
+		},
+	});
+
+	// Initialize matching state from server
+	useEffect(() => {
+		if (statusData?.inQueue) {
+			setIsMatching(true);
+			setIsOpen(true);
+			setSelectedRole(statusData.requestedRole || null);
+		}
+	}, [statusData]);
+
 	const startMatchingMutation = useMutation({
 		mutationFn: async () => {
+			if (!selectedRole) throw new Error("Please select a role");
 			const { data, error } = await api.api.match.start.post({
-				roles: selectedRoles,
+				role: selectedRole,
 			});
 			if (error) throw new Error(getErrorMessage(error));
 			return data;
 		},
 		onSuccess: () => {
 			setIsMatching(true);
+		},
+		onError: (error) => {
+			console.error("Failed to start matching:", error);
 		},
 	});
 
@@ -47,6 +71,10 @@ export function MatchingDialog() {
 		onSuccess: () => {
 			setIsMatching(false);
 			setIsOpen(false);
+			setSelectedRole(null);
+		},
+		onError: (error) => {
+			console.error("Failed to stop matching:", error);
 		},
 	});
 
@@ -58,12 +86,6 @@ export function MatchingDialog() {
 			navigate({ to: "/chat/$id", params: { id: roomId } });
 		}
 	}, [lastMessage, navigate]);
-
-	const toggleRole = (role: string) => {
-		setSelectedRoles((prev) =>
-			prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
-		);
-	};
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -77,7 +99,7 @@ export function MatchingDialog() {
 				<DialogHeader>
 					<DialogTitle>Find a Support Match</DialogTitle>
 					<DialogDescription>
-						Select the roles you are looking to connect with. We'll find someone
+						Select the type of support you are looking for. We'll find someone
 						for you.
 					</DialogDescription>
 				</DialogHeader>
@@ -85,23 +107,27 @@ export function MatchingDialog() {
 				{!isMatching ? (
 					<div className="space-y-4 py-4">
 						<div className="grid gap-4">
-							{["listener", "psychologist", "therapist"].map((role) => (
-								<div key={role} className="flex items-center space-x-2">
-									<Checkbox
-										id={role}
-										checked={selectedRoles.includes(role)}
-										onCheckedChange={() => toggleRole(role)}
-									/>
-									<Label htmlFor={role} className="capitalize">
-										{role}
-									</Label>
-								</div>
-							))}
+							{(["listener", "psychologist", "therapist"] as Role[]).map(
+								(role) => (
+									<div key={role} className="flex items-center space-x-2">
+										<Checkbox
+											id={role}
+											checked={selectedRole === role}
+											onCheckedChange={(checked) =>
+												setSelectedRole(checked ? role : null)
+											}
+										/>
+										<Label htmlFor={role} className="capitalize cursor-pointer">
+											{role}
+										</Label>
+									</div>
+								),
+							)}
 						</div>
 						<Button
 							className="w-full"
 							disabled={
-								selectedRoles.length === 0 || startMatchingMutation.isPending
+								!selectedRole || startMatchingMutation.isPending
 							}
 							onClick={() => startMatchingMutation.mutate()}
 						>
