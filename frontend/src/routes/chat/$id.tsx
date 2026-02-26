@@ -14,10 +14,19 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
 import { useSocket } from "@/hooks/useSocket";
 import { LogOut, Send } from "lucide-react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export const Route = createFileRoute("/chat/$id")({
-	component: ChatRoom,
+	component: ChatRoomPage,
 });
+
+function ChatRoomPage() {
+	return (
+		<ProtectedRoute requireAuth={true} requireProfile={true}>
+			<ChatRoom />
+		</ProtectedRoute>
+	);
+}
 
 function ChatRoom() {
 	const { id } = Route.useParams();

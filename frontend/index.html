@@ -3,15 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:3000 https://*; font-src 'self'; media-src 'self'; frame-ancestors 'none';" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta name="Referrer-Policy" content="strict-origin-when-cross-origin" />
+
+    <!-- App Metadata -->
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="description" content="MindConnect - A secure peer-to-peer mental health support platform connecting listeners, psychologists, and therapists for meaningful conversations." />
+    <meta name="keywords" content="mental health, support, therapy, listener, psychology, wellness, peer support" />
+    <meta name="author" content="MindConnect Team" />
+    <meta name="application-name" content="MindConnect" />
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MindConnect - Mental Health Support Platform" />
+    <meta property="og:description" content="Connect with listeners, psychologists, and therapists for meaningful mental health support conversations." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://mind-connect.vercel.app/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MindConnect" />
+    <meta name="twitter:description" content="Secure peer-to-peer mental health support platform." />
+
+    <!-- Icons -->
     <link rel="icon" href="/favicon.ico" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-tsrouter-app"
-    />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
-    <title>Create TanStack App - frontend</title>
+
+    <title>MindConnect - Peer Mental Health Support</title>
   </head>
   <body>
     <div id="app"></div>

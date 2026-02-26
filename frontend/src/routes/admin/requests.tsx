@@ -27,9 +27,23 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "@tanstack/react-router";
 import type { databaseTypes } from "@/lib/api";
 import type { Static } from "elysia";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+
 export const Route = createFileRoute("/admin/requests")({
-	component: AdminRequests,
+	component: AdminRequestsPage,
 });
+
+function AdminRequestsPage() {
+	return (
+		<ProtectedRoute
+			requireAuth={true}
+			requireProfile={true}
+			requiredPermissions={["admin"]}
+		>
+			<AdminRequests />
+		</ProtectedRoute>
+	);
+}
 
 function AdminRequests() {
 	const { hasPermission } = useAuth();

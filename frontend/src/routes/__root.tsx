@@ -6,7 +6,7 @@ import Header from "../components/Header";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { ThemeProvider } from "../components/theme-provider";
 import { AuthProvider, useAuth } from "../components/auth-context";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
@@ -16,17 +16,38 @@ const AppContent = () => {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { user, profile, loading } = useAuth();
+
+	// Define public routes that don't require authentication
+	const publicRoutes = ["/login"];
+	const isPublicRoute = publicRoutes.includes(location.pathname);
 	const isLoginPage = location.pathname === "/login";
 	const isProfileCreatePage = location.pathname === "/profile/create";
 
-	useEffect(() => {
-		if (!loading && user && !profile && !isProfileCreatePage) {
-			navigate({ to: "/profile/create" });
+	// Middleware: Handle auth redirects
+	const handleAuthRedirects = useCallback(() => {
+		// Skip redirect logic while loading
+		if (loading) return;
+
+		// If not authenticated and not on a public route, redirect to login
+		if (!user && !isPublicRoute && !isProfileCreatePage) {
+			navigate({ to: "/login" });
+			return;
 		}
-	}, [user, profile, loading, isProfileCreatePage, navigate]);
+
+		// If authenticated but no profile, redirect to profile creation (unless already there)
+		if (user && !profile && !isProfileCreatePage && !isLoginPage) {
+			navigate({ to: "/profile/create" });
+			return;
+		}
+	}, [user, profile, loading, isPublicRoute, isProfileCreatePage, isLoginPage, navigate]);
+
+	// Run auth redirects effect
+	useEffect(() => {
+		handleAuthRedirects();
+	}, [handleAuthRedirects]);
 
 	return (
-		<ThemeProvider defaultTheme="dark" storageKey="k8s-dashboard-theme">
+		<ThemeProvider defaultTheme="dark" storageKey="mindconnect-theme">
 			{!isLoginPage && <Header />}
 			<Outlet />
 			<TanStackDevtools

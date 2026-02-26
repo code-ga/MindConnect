@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Search, UserCog, Plus, X, Loader2 } from "lucide-react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 interface Profile {
 	id: string;
@@ -41,8 +42,20 @@ interface Profile {
 }
 
 export const Route = createFileRoute("/admin/users")({
-	component: AdminUsers,
+	component: AdminUsersPage,
 });
+
+function AdminUsersPage() {
+	return (
+		<ProtectedRoute
+			requireAuth={true}
+			requireProfile={true}
+			requiredPermissions={["admin"]}
+		>
+			<AdminUsers />
+		</ProtectedRoute>
+	);
+}
 
 function AdminUsers() {
 	const { hasPermission } = useAuth();

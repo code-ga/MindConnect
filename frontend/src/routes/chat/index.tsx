@@ -25,10 +25,19 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatchingDialog } from "@/components/matching-dialog";
 import { WaiterStatusPanel } from "@/components/waiter-status-panel";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export const Route = createFileRoute("/chat/")({
-	component: ChatList,
+	component: ChatListPage,
 });
+
+function ChatListPage() {
+	return (
+		<ProtectedRoute requireAuth={true} requireProfile={true}>
+			<ChatList />
+		</ProtectedRoute>
+	);
+}
 
 function ChatList() {
 	const [view, setView] = useState<"my-chats" | "discover">("my-chats");

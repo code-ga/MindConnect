@@ -8,15 +8,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { z } from "zod";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const requestSearchSchema = z.object({
 	type: z.enum(["role_request", "feature_request"]).optional(),
 });
 
 export const Route = createFileRoute("/requests/new")({
-	component: NewRequest,
+	component: NewRequestPage,
 	validateSearch: (search) => requestSearchSchema.parse(search),
 });
+
+function NewRequestPage() {
+	return (
+		<ProtectedRoute requireAuth={true} requireProfile={true}>
+			<NewRequest />
+		</ProtectedRoute>
+	);
+}
 
 function NewRequest() {
 	const search = Route.useSearch();

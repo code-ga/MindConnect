@@ -7,10 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RequestListenerButton } from "@/components/request-listener-button";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export const Route = createFileRoute("/settings")({
-	component: SettingsPage,
+	component: SettingsPageWrapper,
 });
+
+function SettingsPageWrapper() {
+	return (
+		<ProtectedRoute requireAuth={true} requireProfile={true}>
+			<SettingsPage />
+		</ProtectedRoute>
+	);
+}
 
 function SettingsPage() {
 	const { profile, refreshProfile } = useAuth();

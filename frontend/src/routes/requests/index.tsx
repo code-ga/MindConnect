@@ -4,10 +4,19 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export const Route = createFileRoute("/requests/")({
-	component: RequestsList,
+	component: RequestsListPage,
 });
+
+function RequestsListPage() {
+	return (
+		<ProtectedRoute requireAuth={true} requireProfile={true}>
+			<RequestsList />
+		</ProtectedRoute>
+	);
+}
 
 interface UserRequest {
 	id: string;

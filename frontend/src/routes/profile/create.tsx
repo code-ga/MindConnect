@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export const Route = createFileRoute("/profile/create")({
-	component: ProfileCreate,
+	component: ProfileCreatePage,
 });
+
+function ProfileCreatePage() {
+	return (
+		<ProtectedRoute requireAuth={true} requireProfile={false}>
+			<ProfileCreate />
+		</ProtectedRoute>
+	);
+}
 
 function ProfileCreate() {
 	const [username, setUsername] = useState("");
