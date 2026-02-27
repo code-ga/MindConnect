@@ -70,14 +70,34 @@ export const verification = pgTable("verification", {
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
 });
-export const permissionEnum = pgEnum("permission", [
-	"user",
-	"listener",
-	"psychologist",
-	"therapist",
-	"manager",
-	"admin",
-]);
+export const role = pgTable("role", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	name: text("name").notNull().unique(),
+	description: text("description"),
+	scope: text("scope").notNull().default("system"), // "system" | "chatroom"
+	isMatchable: boolean("is_matchable").notNull().default(false),
+	isDefault: boolean("is_default").notNull().default(false),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at")
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => /* @__PURE__ */ new Date()),
+});
+
+export const rolePermission = pgTable("role_permission", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	roleId: text("role_id")
+		.notNull()
+		.references(() => role.id, { onDelete: "cascade" }),
+	resource: text("resource").notNull(),
+	action: text("action").notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const profile = pgTable("profile", {
 	id: text("id")
 		.primaryKey()
@@ -89,14 +109,11 @@ export const profile = pgTable("profile", {
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 
 	username: text("username").notNull(),
-	permission: permissionEnum().array().default(["user"]).notNull(),
+	permission: text("permission").array().default(["user"]).notNull(),
 
 	lastSeen: timestamp("last_seen").defaultNow().notNull(),
 	isMatching: boolean("is_matching").default(false).notNull(),
-	matchingRoles: permissionEnum()
-		.array()
-		.default(["listener", "psychologist", "therapist"])
-		.notNull(),
+	matchingRoles: text("matching_roles").array().default([]).notNull(),
 
 	updatedAt: timestamp("updated_at")
 		.$onUpdate(() => /* @__PURE__ */ new Date())
@@ -179,6 +196,22 @@ export const chattingRoom = pgTable("chatting_room", {
 		.notNull(),
 });
 
+export const chatRoomRoleAssignment = pgTable("chat_room_role_assignment", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	chatRoomId: text("chat_room_id")
+		.notNull()
+		.references(() => chattingRoom.id, { onDelete: "cascade" }),
+	profileId: text("profile_id")
+		.notNull()
+		.references(() => profile.id, { onDelete: "cascade" }),
+	roleId: text("role_id")
+		.notNull()
+		.references(() => role.id, { onDelete: "cascade" }),
+	assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+});
+
 export const chatRoomMessage = pgTable("chat_room_message", {
 	id: text("id")
 		.primaryKey()
@@ -237,7 +270,10 @@ export const schema = {
 	session,
 	account,
 	verification,
+	role,
+	rolePermission,
 	profile,
+	chatRoomRoleAssignment,
 	userRequest,
 	chattingRoom,
 	chatRoomMessage,

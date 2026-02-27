@@ -21,6 +21,7 @@ import { Route as ProfileCreateRouteImport } from './routes/profile/create'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as ChatIdRouteImport } from './routes/chat/$id'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminRolesRouteImport } from './routes/admin/roles'
 import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
 
 const UnauthorizedRoute = UnauthorizedRouteImport.update({
@@ -83,6 +84,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/admin/roles',
+  path: '/admin/roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRequestsRoute = AdminRequestsRouteImport.update({
   id: '/admin/requests',
   path: '/admin/requests',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
   '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
   '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
   '/chat/$id': typeof ChatIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/unauthorized'
     | '/admin/requests'
+    | '/admin/roles'
     | '/admin/users'
     | '/chat/$id'
     | '/demo/tanstack-query'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/unauthorized'
     | '/admin/requests'
+    | '/admin/roles'
     | '/admin/users'
     | '/chat/$id'
     | '/demo/tanstack-query'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/unauthorized'
     | '/admin/requests'
+    | '/admin/roles'
     | '/admin/users'
     | '/chat/$id'
     | '/demo/tanstack-query'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   UnauthorizedRoute: typeof UnauthorizedRoute
   AdminRequestsRoute: typeof AdminRequestsRoute
+  AdminRolesRoute: typeof AdminRolesRoute
   AdminUsersRoute: typeof AdminUsersRoute
   ChatIdRoute: typeof ChatIdRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/admin/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/requests': {
       id: '/admin/requests'
       path: '/admin/requests'
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   UnauthorizedRoute: UnauthorizedRoute,
   AdminRequestsRoute: AdminRequestsRoute,
+  AdminRolesRoute: AdminRolesRoute,
   AdminUsersRoute: AdminUsersRoute,
   ChatIdRoute: ChatIdRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,

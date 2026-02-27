@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { authenticationMiddleware } from "../middleware/auth";
+import { authenticationMiddleware, c } from "../middleware/auth";
 import { db } from "../database";
 import { schema } from "../database/schema";
 import { eq } from "drizzle-orm";
@@ -94,7 +94,7 @@ export const userRequestRouter = new Elysia({
 				},
 			),
 	)
-	.guard({ roleAuth: ["manager"] }, (app) =>
+	.guard({ roleAuth: c.any("manager") }, (app) =>
 		app
 			.get(
 				"/all",

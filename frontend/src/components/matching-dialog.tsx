@@ -10,6 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSocket } from "@/hooks/useSocket";
+import { useMatchableRoles } from "@/hooks/useRoles";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -17,14 +18,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { Loader2, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type Role = "listener" | "psychologist" | "therapist";
-
 export function MatchingDialog() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isMatching, setIsMatching] = useState(false);
-	const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+	const [selectedRole, setSelectedRole] = useState<string | null>(null);
 	const navigate = useNavigate();
 	const { lastMessage } = useSocket();
+	const { data: matchableRoles = [], isLoading: rolesLoading } =
+		useMatchableRoles();
 
 	// Fetch status on mount to restore state after page refresh
 	const { data: statusData } = useQuery({
@@ -107,33 +108,37 @@ export function MatchingDialog() {
 				{!isMatching ? (
 					<div className="space-y-4 py-4">
 						<div className="grid gap-4">
-							{(["listener", "psychologist", "therapist"] as Role[]).map(
-								(role) => (
-									<div key={role} className="flex items-center space-x-2">
+							{rolesLoading ? (
+								<div className="flex items-center gap-2 text-muted-foreground text-sm">
+									<Loader2 className="h-4 w-4 animate-spin" />
+									Loading roles...
+								</div>
+							) : (
+								matchableRoles.map((r) => (
+									<div key={r.name} className="flex items-center space-x-2">
 										<Checkbox
-											id={role}
-											checked={selectedRole === role}
+											id={r.name}
+											checked={selectedRole === r.name}
 											onCheckedChange={(checked) =>
-												setSelectedRole(checked ? role : null)
+												setSelectedRole(checked ? r.name : null)
 											}
 										/>
-										<Label htmlFor={role} className="capitalize cursor-pointer">
-											{role}
+										<Label
+											htmlFor={r.name}
+											className="capitalize cursor-pointer"
+										>
+											{r.name}
 										</Label>
 									</div>
-								),
+								))
 							)}
 						</div>
 						<Button
 							className="w-full"
-							disabled={
-								!selectedRole || startMatchingMutation.isPending
-							}
+							disabled={!selectedRole || startMatchingMutation.isPending}
 							onClick={() => startMatchingMutation.mutate()}
 						>
-							{startMatchingMutation.isPending
-								? "Starting..."
-								: "Start Matching"}
+							{startMatchingMutation.isPending ? "Starting..." : "Start Matching"}
 						</Button>
 					</div>
 				) : (

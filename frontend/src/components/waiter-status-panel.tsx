@@ -9,33 +9,34 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useSocket } from "@/hooks/useSocket";
+import { useMatchableRoles } from "@/hooks/useRoles";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Zap } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
-
-type Role = "listener" | "psychologist" | "therapist";
-const AVAILABLE_ROLES: Role[] = ["listener", "psychologist", "therapist"];
 
 interface WaiterStatusResponse {
 	status: "idle" | "working" | "busy";
-	roles: Role[];
+	roles: string[];
 }
 
 export function WaiterStatusPanel(props: { userRoles: string[] }) {
-	const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
-	const [localStatus, setLocalStatus] = useState<
-		"idle" | "working" | "busy"
-	>("idle");
+	const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+	const [localStatus, setLocalStatus] = useState<"idle" | "working" | "busy">(
+		"idle",
+	);
 	const { lastMessage } = useSocket();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
-	// Filter available roles to only those the user has
-	const userWaiterRoles = AVAILABLE_ROLES.filter((role) =>
-		props.userRoles.includes(role),
+	const { data: matchableRoles = [], isLoading: rolesLoading } =
+		useMatchableRoles();
+
+	// Filter to only roles the user has permission for
+	const userWaiterRoles = matchableRoles.filter((r) =>
+		props.userRoles.includes(r.name),
 	);
 
 	// Fetch waiter status on mount
@@ -97,7 +98,6 @@ export function WaiterStatusPanel(props: { userRoles: string[] }) {
 		if (lastMessage?.type === "match_success") {
 			setLocalStatus("busy");
 			const roomId = lastMessage.payload.chatRoomId;
-			// Small delay to ensure UI updates
 			setTimeout(() => {
 				navigate({ to: "/chat/$id", params: { id: roomId } });
 			}, 100);
@@ -116,9 +116,7 @@ export function WaiterStatusPanel(props: { userRoles: string[] }) {
 	};
 
 	const getStatusLabel = () => {
-		if (localStatus === "busy") {
-			return "In Session";
-		}
+		if (localStatus === "busy") return "In Session";
 		return localStatus.charAt(0).toUpperCase() + localStatus.slice(1);
 	};
 
@@ -148,52 +146,45 @@ export function WaiterStatusPanel(props: { userRoles: string[] }) {
 								Select roles to serve as:
 							</Label>
 							<div className="space-y-2">
-								{userWaiterRoles.map((role) => (
-									<div
-										key={role}
-										className="flex items-center space-x-2"
-									>
-										<Checkbox
-											id={`role-${role}`}
-											checked={selectedRoles.includes(
-												role,
-											)}
-											onCheckedChange={(checked) => {
-												setSelectedRoles((prev) =>
-													checked
-														? [...prev, role]
-														: prev.filter(
-																(r) => r !== role,
-														),
-												);
-											}}
-											disabled={
-												startWorkingMutation.isPending
-											}
-										/>
-										<Label
-											htmlFor={`role-${role}`}
-											className="capitalize cursor-pointer"
-										>
-											{role}
-										</Label>
+								{rolesLoading ? (
+									<div className="flex items-center gap-2 text-muted-foreground text-sm">
+										<Loader2 className="h-4 w-4 animate-spin" />
+										Loading roles...
 									</div>
-								))}
+								) : (
+									userWaiterRoles.map((r) => (
+										<div key={r.name} className="flex items-center space-x-2">
+											<Checkbox
+												id={`role-${r.name}`}
+												checked={selectedRoles.includes(r.name)}
+												onCheckedChange={(checked) => {
+													setSelectedRoles((prev) =>
+														checked
+															? [...prev, r.name]
+															: prev.filter((x) => x !== r.name),
+													);
+												}}
+												disabled={startWorkingMutation.isPending}
+											/>
+											<Label
+												htmlFor={`role-${r.name}`}
+												className="capitalize cursor-pointer"
+											>
+												{r.name}
+											</Label>
+										</div>
+									))
+								)}
 							</div>
 						</div>
 						<Button
 							className="w-full"
 							disabled={
-								selectedRoles.length === 0 ||
-								startWorkingMutation.isPending
+								selectedRoles.length === 0 || startWorkingMutation.isPending
 							}
-							onClick={() =>
-								startWorkingMutation.mutate()
-							}
+							onClick={() => startWorkingMutation.mutate()}
 						>
-							{startWorkingMutation.isPending
-								? "Starting..."
-								: "Start Working"}
+							{startWorkingMutation.isPending ? "Starting..." : "Start Working"}
 						</Button>
 					</>
 				) : (
@@ -218,19 +209,15 @@ export function WaiterStatusPanel(props: { userRoles: string[] }) {
 								variant="destructive"
 								className="w-full"
 								disabled={stopWorkingMutation.isPending}
-								onClick={() =>
-									stopWorkingMutation.mutate()
-								}
+								onClick={() => stopWorkingMutation.mutate()}
 							>
-								{stopWorkingMutation.isPending
-									? "Stopping..."
-									: "Stop Working"}
+								{stopWorkingMutation.isPending ? "Stopping..." : "Stop Working"}
 							</Button>
 						)}
 						{localStatus === "busy" && (
 							<div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
-								You're currently in a session. Leave the chat
-								room to become available again.
+								You're currently in a session. Leave the chat room to become
+								available again.
 							</div>
 						)}
 					</>

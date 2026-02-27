@@ -4,13 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authQueries } from "@/lib/auth-queries";
 import { authClient } from "@/lib/auth";
 
-export type Permission = 
-  | "user"
-  | "listener"
-  | "psychologist"
-  | "therapist"
-  | "manager"
-  | "admin";
+export type Permission = string; // dynamic — roles are stored in the DB
 
 interface User {
   id: string;

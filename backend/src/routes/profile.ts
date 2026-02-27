@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { authenticationMiddleware } from "../middleware/auth";
+import { authenticationMiddleware, c } from "../middleware/auth";
 import { schema } from "../database/schema";
 import { eq } from "drizzle-orm";
 import { db } from "../database";
@@ -222,7 +222,7 @@ export const profileRouter = new Elysia({
 		// 	return profile;
 		// }),
 	)
-	.guard({ roleAuth: ["manager"] }, (app) =>
+	.guard({ roleAuth: c.any("manager") }, (app) =>
 		app
 			.patch(
 				"/add_role",
@@ -317,7 +317,7 @@ export const profileRouter = new Elysia({
 						200: baseResponseSchema(Type.Object(dbSchemaTypes.profile)),
 						400: errorResponseSchema,
 					},
-					roleAuth: ["manager"],
+					roleAuth: c.any("manager"),
 				},
 			)
 			.patch(
@@ -386,7 +386,7 @@ export const profileRouter = new Elysia({
 						200: baseResponseSchema(Type.Object(dbSchemaTypes.profile)),
 						400: errorResponseSchema,
 					},
-					roleAuth: ["manager"],
+					roleAuth: c.any("manager"),
 				},
 			)
 			.get(
@@ -408,7 +408,7 @@ export const profileRouter = new Elysia({
 						),
 						400: errorResponseSchema,
 					},
-					roleAuth: ["manager"],
+					roleAuth: c.any("manager"),
 				},
 			)
 			.get(
@@ -457,19 +457,19 @@ export const profileRouter = new Elysia({
 						),
 						400: errorResponseSchema,
 					},
-					roleAuth: ["manager"],
+					roleAuth: c.any("manager"),
 				},
 			)
 			.get(
 				"/available-role",
 				async (ctx) => {
-					const roles: string[] = [];
-					dbSchemaTypes.profile.permission.items.anyOf.forEach((role) => {
-						roles.push(role.const);
-					});
+					const roles = await db
+						.select({ name: schema.role.name })
+						.from(schema.role)
+						.where(eq(schema.role.scope, "system"));
 					return ctx.status(200, {
 						status: 200,
-						data: roles,
+						data: roles.map((r) => r.name),
 						message: "Roles fetched successfully",
 						timestamp: Date.now(),
 						success: true,
@@ -480,7 +480,7 @@ export const profileRouter = new Elysia({
 						200: baseResponseSchema(Type.Array(Type.String())),
 						400: errorResponseSchema,
 					},
-					roleAuth: ["manager"],
+					roleAuth: c.any("manager"),
 				},
 			),
 	);

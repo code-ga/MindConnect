@@ -3,20 +3,18 @@ import { schema } from "../database/schema";
 import { broadcastToUser } from "./broadcast";
 import { eq } from "drizzle-orm";
 
-type Role = "listener" | "psychologist" | "therapist";
-const WAITER_ROLES = new Set<string>(["listener", "psychologist", "therapist"]);
 const HEARTBEAT_TIMEOUT = 90_000; // 90 seconds = 3 missed heartbeats (30s each)
 
 interface WaiterEntry {
 	profileId: string;
-	roles: Role[];
+	roles: string[];
 	status: "working" | "busy";
 	lastHeartbeat: number;
 }
 
 interface UserQueueEntry {
 	profileId: string;
-	requestedRole: Role;
+	requestedRole: string;
 	startedAt: number;
 }
 
@@ -25,24 +23,50 @@ class MatchingService {
 	private userQueue: UserQueueEntry[] = [];
 	private processingInterval: NodeJS.Timeout | null = null;
 	private isProcessing = false;
+	private matchableRoles: Set<string> = new Set();
 	private readonly MATCH_INTERVAL = 1000; // Check every 1 second
 
 	constructor() {
-		this.processingInterval = setInterval(() => {
-			void this.processQueue();
-		}, this.MATCH_INTERVAL);
+		// Load matchable roles from DB, then start interval
+		void this.refreshMatchableRoles().then(() => {
+			this.processingInterval = setInterval(() => {
+				void this.processQueue();
+			}, this.MATCH_INTERVAL);
+		});
+	}
+
+	// ============ Role Management ============
+
+	async refreshMatchableRoles(): Promise<void> {
+		try {
+			const roles = await db
+				.select({ name: schema.role.name })
+				.from(schema.role)
+				.where(eq(schema.role.isMatchable, true));
+			this.matchableRoles = new Set(roles.map((r) => r.name));
+		} catch {
+			// Table may not exist yet (before migration) — keep current set
+		}
+	}
+
+	getMatchableRoles(): Set<string> {
+		return this.matchableRoles;
+	}
+
+	isMatchableRole(role: string): boolean {
+		return this.matchableRoles.has(role);
 	}
 
 	// ============ Waiter API ============
 
 	async setWaiterWorking(
 		profileId: string,
-		requestedRoles: Role[],
+		requestedRoles: string[],
 		permission: string[],
 	): Promise<{ success: boolean; message: string }> {
-		// Validate that requested roles are in permission
-		const validRoles = requestedRoles.filter((role) =>
-			permission.includes(role),
+		// Validate that requested roles are matchable and in user's permission
+		const validRoles = requestedRoles.filter(
+			(role) => permission.includes(role) && this.matchableRoles.has(role),
 		);
 
 		if (validRoles.length === 0) {
@@ -108,7 +132,7 @@ class MatchingService {
 		return waiter.status;
 	}
 
-	getWaiterRoles(profileId: string): Role[] {
+	getWaiterRoles(profileId: string): string[] {
 		const waiter = this.waiters.get(profileId);
 		return waiter?.roles ?? [];
 	}
@@ -117,7 +141,7 @@ class MatchingService {
 
 	async enqueueUser(
 		profileId: string,
-		requestedRole: Role,
+		requestedRole: string,
 	): Promise<{ success: boolean; message: string }> {
 		// Check atomicity: if already in queue
 		if (this.userQueue.some((u) => u.profileId === profileId)) {
@@ -155,7 +179,6 @@ class MatchingService {
 	}
 
 	stopMatching(profileId: string): { success: boolean; message: string } {
-		// Synchronous removal from queue (for cancellation)
 		const existed = this.userQueue.some((u) => u.profileId === profileId);
 		if (existed) {
 			void this.dequeueUser(profileId);
@@ -172,22 +195,20 @@ class MatchingService {
 		matchingRoles: string[];
 		permission: string[];
 	}): Promise<void> {
-		// If not marked as matching in DB, nothing to restore
 		if (!profile.isMatching) return;
 
 		const now = Date.now();
 
-		// If profile has waiter roles in permission, restore as waiter
+		// If profile has any matchable role in permission, restore as waiter
 		const hasWaiterRole = profile.permission.some((p) =>
-			WAITER_ROLES.has(p),
+			this.matchableRoles.has(p),
 		);
 
 		if (hasWaiterRole) {
-			// Restore waiter state if not already in memory
 			if (!this.waiters.has(profile.id)) {
 				const roles = profile.matchingRoles.filter((r) =>
-					WAITER_ROLES.has(r),
-				) as Role[];
+					this.matchableRoles.has(r),
+				);
 				if (roles.length > 0) {
 					this.waiters.set(profile.id, {
 						profileId: profile.id,
@@ -198,10 +219,9 @@ class MatchingService {
 				}
 			}
 		} else {
-			// Restore user queue state if not already in queue
 			if (!this.userQueue.some((u) => u.profileId === profile.id)) {
-				const requestedRole = profile.matchingRoles[0] as Role | undefined;
-				if (requestedRole && WAITER_ROLES.has(requestedRole)) {
+				const requestedRole = profile.matchingRoles[0];
+				if (requestedRole) {
 					this.userQueue.push({
 						profileId: profile.id,
 						requestedRole,
@@ -216,7 +236,7 @@ class MatchingService {
 
 	getUserQueueStatus(profileId: string): {
 		inQueue: boolean;
-		requestedRole: Role | null;
+		requestedRole: string | null;
 	} {
 		const user = this.userQueue.find((u) => u.profileId === profileId);
 		return {
@@ -227,8 +247,7 @@ class MatchingService {
 
 	// ============ Matching Logic ============
 
-	private findAvailableWaiter(requestedRole: Role): WaiterEntry | null {
-		// Find first waiter who is working and serves the requested role
+	private findAvailableWaiter(requestedRole: string): WaiterEntry | null {
 		for (const waiter of this.waiters.values()) {
 			if (
 				waiter.status === "working" &&
@@ -245,23 +264,16 @@ class MatchingService {
 		this.isProcessing = true;
 
 		try {
-			// Clean up stale waiters first
 			this.cleanupStaleWaiters();
 
-			// Process each user in queue
 			for (const user of [...this.userQueue]) {
 				const waiter = this.findAvailableWaiter(user.requestedRole);
 				if (!waiter) continue;
 
-				// Mark waiter as busy in-memory (atomic in JS single-thread)
 				this.setWaiterBusy(waiter.profileId);
-
-				// Remove user from queue synchronously
 				this.userQueue = this.userQueue.filter(
 					(u) => u.profileId !== user.profileId,
 				);
-
-				// Then do async operations
 				await this.createMatch(user.profileId, waiter.profileId);
 			}
 		} finally {
@@ -279,10 +291,8 @@ class MatchingService {
 			}
 		}
 
-		// Remove stale waiters
 		for (const profileId of staleWaiters) {
 			this.waiters.delete(profileId);
-			// DB write-through: mark as not matching
 			void db
 				.update(schema.profile)
 				.set({ isMatching: false })
@@ -306,7 +316,6 @@ class MatchingService {
 			if (room) {
 				console.log(`Matched ${userId} and ${waiterId} in room ${room.id}`);
 
-				// Notify both users via WebSocket broadcast
 				const matchNotification = {
 					type: "match_success",
 					payload: { chatRoomId: room.id },
@@ -315,7 +324,6 @@ class MatchingService {
 				broadcastToUser(userId, matchNotification);
 				broadcastToUser(waiterId, matchNotification);
 
-				// Set both as not matching in DB (user was already done, mark waiter as not available)
 				await db
 					.update(schema.profile)
 					.set({ isMatching: false })
