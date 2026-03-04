@@ -94,8 +94,26 @@ export function SocketProvider({
 		unmountedRef.current = false;
 		connect();
 
+		const handleVisibilityChange = () => {
+			if (document.visibilityState !== "visible") return;
+			if (socketRef.current?.readyState === WebSocket.OPEN) {
+				// Tab came back — send heartbeat immediately so server doesn't stale us out
+				socketRef.current.send(JSON.stringify({ type: "heartbeat" }));
+			} else {
+				// Socket was closed/closing while backgrounded — reconnect now
+				if (reconnectTimerRef.current) {
+					clearTimeout(reconnectTimerRef.current);
+					reconnectTimerRef.current = null;
+				}
+				connect();
+			}
+		};
+
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+
 		return () => {
 			unmountedRef.current = true;
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
 			if (reconnectTimerRef.current) {
 				clearTimeout(reconnectTimerRef.current);
 			}

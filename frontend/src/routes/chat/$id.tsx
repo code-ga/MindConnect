@@ -56,16 +56,16 @@ function ChatRoom() {
 		},
 	});
 
+	const participantIds = chatroom?.participantIds ?? [];
+	const participantIdsKey = [...participantIds].sort().join(",");
+
 	const { data: participants, isLoading: isLoadingParticipants } = useQuery({
-		queryKey: ["chatroom-participants", chatroom?.participantIds],
+		queryKey: ["chatroom-participants", participantIdsKey],
 		queryFn: async () => {
-			if (!chatroom?.participantIds) return [];
 			const pInfos = await Promise.all(
-				chatroom.participantIds.map(async (pId: string) => {
+				participantIds.map(async (pId: string) => {
 					const { data, error } = await api.api.profile.get({
-						query: {
-							profileId: pId,
-						},
+						query: { profileId: pId },
 					});
 					if (error) return null;
 					return data.data;
@@ -73,7 +73,8 @@ function ChatRoom() {
 			);
 			return pInfos.filter((p) => p !== null);
 		},
-		enabled: !!chatroom?.participantIds,
+		enabled: participantIds.length > 0,
+		staleTime: 1000 * 60 * 5, // profiles don't change often
 	});
 
 	const leaveMutation = useMutation({
