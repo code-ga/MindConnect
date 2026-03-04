@@ -10,6 +10,7 @@ import {
 	ShieldCheck,
 	Users,
 	MessageCircle,
+	KeyRound,
 } from "lucide-react";
 import { useState } from "react";
 import { ModeToggle } from "./mode-toggle";
@@ -158,6 +159,21 @@ export default function Header() {
 						>
 							<Users size={20} />
 							<span className="font-medium">User Management</span>
+						</Link>
+					</RoleGuard>
+
+					<RoleGuard requiredPermissions={["admin"]}>
+						<Link
+							to="/admin/roles"
+							onClick={() => setIsOpen(false)}
+							className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors mb-2"
+							activeProps={{
+								className:
+									"flex items-center gap-3 p-3 rounded-lg bg-primary text-primary-foreground transition-colors mb-2",
+							}}
+						>
+							<KeyRound size={20} />
+							<span className="font-medium">Role Management</span>
 						</Link>
 					</RoleGuard>
 

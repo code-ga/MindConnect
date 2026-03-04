@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useSocket } from "@/hooks/useSocket";
+import { useSocket } from "@/components/socket-context";
 import { useMatchableRoles } from "@/hooks/useRoles";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
@@ -27,7 +27,7 @@ export function MatchingDialog() {
 	const { data: matchableRoles = [], isLoading: rolesLoading } =
 		useMatchableRoles();
 
-	// Fetch status on mount to restore state after page refresh
+	// Poll status: on mount to restore state, and every 2s while matching as WS fallback
 	const { data: statusData } = useQuery({
 		queryKey: ["match-status"],
 		queryFn: async () => {
@@ -35,16 +35,22 @@ export function MatchingDialog() {
 			if (error) throw new Error(getErrorMessage(error));
 			return data.data;
 		},
+		refetchInterval: isMatching ? 2000 : false,
 	});
 
-	// Initialize matching state from server
+	// Initialize matching state from server, and handle match found via poll fallback
 	useEffect(() => {
-		if (statusData?.inQueue) {
+		if (!statusData) return;
+		if (statusData.matchedChatRoomId) {
+			setIsMatching(false);
+			setIsOpen(false);
+			navigate({ to: "/chat/$id", params: { id: statusData.matchedChatRoomId } });
+		} else if (statusData.inQueue) {
 			setIsMatching(true);
 			setIsOpen(true);
 			setSelectedRole(statusData.requestedRole || null);
 		}
-	}, [statusData]);
+	}, [statusData, navigate]);
 
 	const startMatchingMutation = useMutation({
 		mutationFn: async () => {

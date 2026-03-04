@@ -7,7 +7,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { useSocket } from "@/hooks/useSocket";
+import { useSocket } from "@/components/socket-context";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";

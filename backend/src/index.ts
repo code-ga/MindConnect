@@ -33,8 +33,8 @@ export const app = new Elysia()
 	.use(socketService)
 	.listen(PORT);
 
-// Initialize broadcast server for services to use
-setBroadcastServer(app.server);
+// Register a lazy getter so broadcastToUser always resolves the current server
+setBroadcastServer(() => app.server);
 
 console.log(`Listening on ${app.server?.url}`);
 

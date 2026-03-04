@@ -24,7 +24,9 @@ class MatchingService {
 	private processingInterval: NodeJS.Timeout | null = null;
 	private isProcessing = false;
 	private matchableRoles: Set<string> = new Set();
+	private matchedUsers = new Map<string, { chatRoomId: string; matchedAt: number }>();
 	private readonly MATCH_INTERVAL = 1000; // Check every 1 second
+	private readonly MATCHED_TTL = 5 * 60 * 1000; // Keep matched entry for 5 minutes
 
 	constructor() {
 		// Load matchable roles from DB, then start interval
@@ -237,11 +239,14 @@ class MatchingService {
 	getUserQueueStatus(profileId: string): {
 		inQueue: boolean;
 		requestedRole: string | null;
+		matchedChatRoomId: string | null;
 	} {
 		const user = this.userQueue.find((u) => u.profileId === profileId);
+		const matched = this.matchedUsers.get(profileId);
 		return {
 			inQueue: !!user,
 			requestedRole: user?.requestedRole ?? null,
+			matchedChatRoomId: matched?.chatRoomId ?? null,
 		};
 	}
 
@@ -265,6 +270,7 @@ class MatchingService {
 
 		try {
 			this.cleanupStaleWaiters();
+			this.cleanupStaleMatches();
 
 			for (const user of [...this.userQueue]) {
 				const waiter = this.findAvailableWaiter(user.requestedRole);
@@ -316,6 +322,14 @@ class MatchingService {
 			if (room) {
 				console.log(`Matched ${userId} and ${waiterId} in room ${room.id}`);
 
+				// Store match result so the status poll can serve it as a fallback
+				const now = Date.now();
+				this.matchedUsers.set(userId, { chatRoomId: room.id, matchedAt: now });
+				this.matchedUsers.set(waiterId, { chatRoomId: room.id, matchedAt: now });
+
+				// Remove waiter from pool (they're matched, not just busy)
+				this.waiters.delete(waiterId);
+
 				const matchNotification = {
 					type: "match_success",
 					payload: { chatRoomId: room.id },
@@ -324,6 +338,11 @@ class MatchingService {
 				broadcastToUser(userId, matchNotification);
 				broadcastToUser(waiterId, matchNotification);
 
+				// Reset isMatching for both parties in the DB
+				await db
+					.update(schema.profile)
+					.set({ isMatching: false })
+					.where(eq(schema.profile.id, userId));
 				await db
 					.update(schema.profile)
 					.set({ isMatching: false })
@@ -331,6 +350,15 @@ class MatchingService {
 			}
 		} catch (error) {
 			console.error("Error creating match:", error);
+		}
+	}
+
+	private cleanupStaleMatches(): void {
+		const now = Date.now();
+		for (const [profileId, entry] of this.matchedUsers.entries()) {
+			if (now - entry.matchedAt > this.MATCHED_TTL) {
+				this.matchedUsers.delete(profileId);
+			}
 		}
 	}
 

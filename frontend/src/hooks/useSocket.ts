@@ -19,24 +19,35 @@ export function useSocket() {
 		const wsUrl = `${BACKEND_URL.replace(/^http/, "ws")}/ws`;
 		const socket = new WebSocket(wsUrl);
 
+		let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+
 		socket.onopen = () => {
 			setIsConnected(true);
 			console.log("Connected to WebSocket");
 
 			// Start heartbeat
-			const heartbeatInterval = setInterval(() => {
+			heartbeatInterval = setInterval(() => {
 				if (socket.readyState === WebSocket.OPEN) {
 					socket.send(JSON.stringify({ type: "heartbeat" }));
 				}
 			}, 30000);
+		};
 
-			socket.onclose = () => {
-				setIsConnected(false);
+		// Registered outside onopen so it fires even if the connection
+		// is rejected before opening (auth failure, network error, etc.)
+		socket.onclose = () => {
+			setIsConnected(false);
+			if (heartbeatInterval) {
 				clearInterval(heartbeatInterval);
-				console.log("Disconnected from WebSocket");
-				// Reconnect after delay
-				setTimeout(connect, 3000);
-			};
+				heartbeatInterval = null;
+			}
+			console.log("WebSocket disconnected — reconnecting in 3s");
+			setTimeout(connect, 3000);
+		};
+
+		socket.onerror = (event) => {
+			console.error("WebSocket error", event);
+			// onclose fires automatically after onerror, so reconnect happens there
 		};
 
 		socket.onmessage = (event) => {
@@ -54,7 +65,12 @@ export function useSocket() {
 	useEffect(() => {
 		connect();
 		return () => {
-			socketRef.current?.close();
+			// Prevent the onclose reconnect from firing after unmount
+			const socket = socketRef.current;
+			if (socket) {
+				socket.onclose = null;
+				socket.close();
+			}
 		};
 	}, [connect]);
 

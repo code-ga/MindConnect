@@ -8,7 +8,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useSocket } from "@/hooks/useSocket";
+import { useSocket } from "@/components/socket-context";
 import { useMatchableRoles } from "@/hooks/useRoles";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-utils";

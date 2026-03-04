@@ -6,6 +6,7 @@ import Header from "../components/Header";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { ThemeProvider } from "../components/theme-provider";
 import { AuthProvider, useAuth } from "../components/auth-context";
+import { SocketProvider } from "../components/socket-context";
 import { useEffect, useCallback } from "react";
 
 interface MyRouterContext {
@@ -48,20 +49,22 @@ const AppContent = () => {
 
 	return (
 		<ThemeProvider defaultTheme="dark" storageKey="mindconnect-theme">
-			{!isLoginPage && <Header />}
-			<Outlet />
-			<TanStackDevtools
-				config={{
-					position: "bottom-right",
-				}}
-				plugins={[
-					{
-						name: "Tanstack Router",
-						render: <TanStackRouterDevtoolsPanel />,
-					},
-					TanStackQueryDevtools,
-				]}
-			/>
+			<SocketProvider enabled={!!user}>
+				{!isLoginPage && <Header />}
+				<Outlet />
+				<TanStackDevtools
+					config={{
+						position: "bottom-right",
+					}}
+					plugins={[
+						{
+							name: "Tanstack Router",
+							render: <TanStackRouterDevtoolsPanel />,
+						},
+						TanStackQueryDevtools,
+					]}
+				/>
+			</SocketProvider>
 		</ThemeProvider>
 	);
 };

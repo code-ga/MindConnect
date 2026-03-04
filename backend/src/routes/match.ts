@@ -112,6 +112,7 @@ export const matchRouter = new Elysia({
 							t.Object({
 								inQueue: t.Boolean(),
 								requestedRole: t.Union([t.String(), t.Null()]),
+								matchedChatRoomId: t.Union([t.String(), t.Null()]),
 							}),
 						),
 						400: errorResponseSchema,
