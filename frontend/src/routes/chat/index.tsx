@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatchingDialog } from "@/components/matching-dialog";
+import { PeerMatchingDialog } from "@/components/peer-matching-dialog";
 import { WaiterStatusPanel } from "@/components/waiter-status-panel";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -177,7 +178,10 @@ function ChatList() {
 							Public
 						</Button>
 					</div>
+					<div className="flex gap-2">
+					<PeerMatchingDialog />
 					<MatchingDialog />
+				</div>
 				</div>
 			</div>
 

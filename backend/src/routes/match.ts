@@ -222,6 +222,108 @@ export const matchRouter = new Elysia({
 					},
 				},
 			)
+			// ============ Peer Routes ============
+			.post(
+				"/peer/join",
+				async (ctx) => {
+					if (!ctx.profile) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Profile not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+
+					const result = await matchingService.joinPeerPool(ctx.profile.id);
+
+					if (!result.success) {
+						return ctx.status(400, {
+							status: 400,
+							message: result.message,
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+
+					return ctx.status(200, {
+						status: 200,
+						data: null,
+						message: result.message,
+						timestamp: Date.now(),
+						success: true,
+					});
+				},
+				{
+					response: {
+						200: baseResponseSchema(t.Null()),
+						400: errorResponseSchema,
+					},
+				},
+			)
+			.post(
+				"/peer/leave",
+				async (ctx) => {
+					if (!ctx.profile) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Profile not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+
+					const result = await matchingService.leavePeerPool(ctx.profile.id);
+
+					return ctx.status(200, {
+						status: 200,
+						data: null,
+						message: result.message,
+						timestamp: Date.now(),
+						success: result.success,
+					});
+				},
+				{
+					response: {
+						200: baseResponseSchema(t.Null()),
+						400: errorResponseSchema,
+					},
+				},
+			)
+			.get(
+				"/peer/status",
+				async (ctx) => {
+					if (!ctx.profile) {
+						return ctx.status(400, {
+							status: 400,
+							message: "Profile not found",
+							timestamp: Date.now(),
+							success: false,
+						});
+					}
+
+					const status = matchingService.getPeerStatus(ctx.profile.id);
+
+					return ctx.status(200, {
+						status: 200,
+						data: status,
+						message: "Peer status retrieved",
+						timestamp: Date.now(),
+						success: true,
+					});
+				},
+				{
+					response: {
+						200: baseResponseSchema(
+							t.Object({
+								inPool: t.Boolean(),
+								matchedChatRoomId: t.Union([t.String(), t.Null()]),
+							}),
+						),
+						400: errorResponseSchema,
+					},
+				},
+			)
 			.get(
 				"/waiter/status",
 				async (ctx) => {

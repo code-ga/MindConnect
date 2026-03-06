@@ -4,6 +4,7 @@ import { broadcastToUser } from "./broadcast";
 import { eq } from "drizzle-orm";
 
 const HEARTBEAT_TIMEOUT = 90_000; // 90 seconds = 3 missed heartbeats (30s each)
+const PEER_SENTINEL = "__peer__"; // Sentinel value stored in matchingRoles for peer matching
 
 interface WaiterEntry {
 	profileId: string;
@@ -18,9 +19,15 @@ interface UserQueueEntry {
 	startedAt: number;
 }
 
+interface PeerEntry {
+	profileId: string;
+	lastHeartbeat: number;
+}
+
 class MatchingService {
 	private waiters = new Map<string, WaiterEntry>();
 	private userQueue: UserQueueEntry[] = [];
+	private peerPool = new Map<string, PeerEntry>();
 	private processingInterval: NodeJS.Timeout | null = null;
 	private isProcessing = false;
 	private matchableRoles: Set<string> = new Set();
@@ -126,6 +133,11 @@ class MatchingService {
 		if (waiter) {
 			waiter.lastHeartbeat = Date.now();
 		}
+		// Also update peer heartbeat if they're in the peer pool
+		const peer = this.peerPool.get(profileId);
+		if (peer) {
+			peer.lastHeartbeat = Date.now();
+		}
 	}
 
 	getWaiterStatus(profileId: string): "idle" | "working" | "busy" {
@@ -137,6 +149,55 @@ class MatchingService {
 	getWaiterRoles(profileId: string): string[] {
 		const waiter = this.waiters.get(profileId);
 		return waiter?.roles ?? [];
+	}
+
+	// ============ Peer API ============
+
+	async joinPeerPool(profileId: string): Promise<{ success: boolean; message: string }> {
+		// Atomicity: reject if already in any matching mode
+		if (this.peerPool.has(profileId)) {
+			return { success: false, message: "Already in peer pool" };
+		}
+		if (this.userQueue.some((u) => u.profileId === profileId)) {
+			return { success: false, message: "Already in support matching queue" };
+		}
+		if (this.waiters.has(profileId)) {
+			return { success: false, message: "Already in working mode" };
+		}
+
+		this.peerPool.set(profileId, { profileId, lastHeartbeat: Date.now() });
+
+		await db
+			.update(schema.profile)
+			.set({ isMatching: true, matchingRoles: [PEER_SENTINEL] })
+			.where(eq(schema.profile.id, profileId));
+
+		return { success: true, message: "Joined peer pool" };
+	}
+
+	async leavePeerPool(profileId: string): Promise<{ success: boolean; message: string }> {
+		const existed = this.peerPool.has(profileId);
+		this.peerPool.delete(profileId);
+
+		await db
+			.update(schema.profile)
+			.set({ isMatching: false })
+			.where(eq(schema.profile.id, profileId));
+
+		return existed
+			? { success: true, message: "Left peer pool" }
+			: { success: false, message: "Not in peer pool" };
+	}
+
+	getPeerStatus(profileId: string): {
+		inPool: boolean;
+		matchedChatRoomId: string | null;
+	} {
+		const matched = this.matchedUsers.get(profileId);
+		return {
+			inPool: this.peerPool.has(profileId),
+			matchedChatRoomId: matched?.chatRoomId ?? null,
+		};
 	}
 
 	// ============ User API ============
@@ -200,6 +261,14 @@ class MatchingService {
 		if (!profile.isMatching) return;
 
 		const now = Date.now();
+
+		// Restore peer pool if sentinel is present
+		if (profile.matchingRoles[0] === PEER_SENTINEL) {
+			if (!this.peerPool.has(profile.id)) {
+				this.peerPool.set(profile.id, { profileId: profile.id, lastHeartbeat: now });
+			}
+			return;
+		}
 
 		// If profile has any matchable role in permission, restore as waiter
 		const hasWaiterRole = profile.permission.some((p) =>
@@ -270,6 +339,7 @@ class MatchingService {
 
 		try {
 			this.cleanupStaleWaiters();
+			this.cleanupStalePeers();
 			this.cleanupStaleMatches();
 
 			for (const user of [...this.userQueue]) {
@@ -282,8 +352,37 @@ class MatchingService {
 				);
 				await this.createMatch(user.profileId, waiter.profileId);
 			}
+
+			await this.processPeerPool();
 		} finally {
 			this.isProcessing = false;
+		}
+	}
+
+	private async processPeerPool(): Promise<void> {
+		const peers = [...this.peerPool.values()];
+		let i = 0;
+		while (i + 1 < peers.length) {
+			const peer1 = peers[i];
+			const peer2 = peers[i + 1];
+			if (!peer1 || !peer2) break;
+			this.peerPool.delete(peer1.profileId);
+			this.peerPool.delete(peer2.profileId);
+			await this.createPeerMatch(peer1.profileId, peer2.profileId);
+			i += 2;
+		}
+	}
+
+	private cleanupStalePeers(): void {
+		const now = Date.now();
+		for (const [profileId, peer] of this.peerPool.entries()) {
+			if (now - peer.lastHeartbeat > HEARTBEAT_TIMEOUT) {
+				this.peerPool.delete(profileId);
+				void db
+					.update(schema.profile)
+					.set({ isMatching: false })
+					.where(eq(schema.profile.id, profileId));
+			}
 		}
 	}
 
@@ -350,6 +449,48 @@ class MatchingService {
 			}
 		} catch (error) {
 			console.error("Error creating match:", error);
+		}
+	}
+
+	private async createPeerMatch(userId1: string, userId2: string): Promise<void> {
+		try {
+			const [room] = await db
+				.insert(schema.chattingRoom)
+				.values({
+					name: "Peer Chat Session",
+					participantIds: [userId1, userId2],
+					type: "private-chat-for-support",
+					ownerId: userId1,
+					status: "active",
+				})
+				.returning();
+
+			if (room) {
+				console.log(`Peer matched ${userId1} and ${userId2} in room ${room.id}`);
+
+				const now = Date.now();
+				this.matchedUsers.set(userId1, { chatRoomId: room.id, matchedAt: now });
+				this.matchedUsers.set(userId2, { chatRoomId: room.id, matchedAt: now });
+
+				const matchNotification = {
+					type: "match_success",
+					payload: { chatRoomId: room.id },
+				};
+
+				broadcastToUser(userId1, matchNotification);
+				broadcastToUser(userId2, matchNotification);
+
+				await db
+					.update(schema.profile)
+					.set({ isMatching: false })
+					.where(eq(schema.profile.id, userId1));
+				await db
+					.update(schema.profile)
+					.set({ isMatching: false })
+					.where(eq(schema.profile.id, userId2));
+			}
+		} catch (error) {
+			console.error("Error creating peer match:", error);
 		}
 	}
 
