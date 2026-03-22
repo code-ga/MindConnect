@@ -17,14 +17,14 @@ RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
 # --- Stage 2: Production Runtime ---
 FROM base AS runner
 # Copy workspace node_modules from the deps stage
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps --chown=bun:bun /app/node_modules ./node_modules
 
 # Copy backend source and root package.json
 # By only copying the backend folder, we ensure that changes in frontend/src
 # do NOT invalidate the Docker cache for this stage.
-COPY backend ./backend
-COPY ./backend/drizzle ./backend/drizzle
-COPY package.json ./
+COPY --chown=bun:bun backend ./backend
+COPY --chown=bun:bun ./backend/drizzle ./backend/drizzle
+COPY --chown=bun:bun package.json ./
 
 # Set working directory to the backend package
 WORKDIR /app/backend
@@ -33,12 +33,12 @@ WORKDIR /app/backend
 EXPOSE 3001
 ENV NODE_ENV=production
 
+# Copy entrypoint script
+COPY --chown=bun:bun backend/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Use the built-in 'bun' user for security
 USER bun
-
-# Copy entrypoint script
-COPY backend/docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
 
 # Run database migrations and start the application
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
