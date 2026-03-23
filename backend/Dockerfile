@@ -35,6 +35,7 @@ ENV NODE_ENV=production
 
 # Copy entrypoint script
 COPY --chown=bun:bun backend/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh 
 RUN chmod +x /app/docker-entrypoint.sh
 
 # Use the built-in 'bun' user for security
