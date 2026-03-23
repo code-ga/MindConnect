@@ -42,4 +42,5 @@ RUN chmod +x /app/docker-entrypoint.sh
 USER bun
 
 # Run database migrations and start the application
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["sh", "/app/docker-entrypoint.sh"]
