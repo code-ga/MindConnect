@@ -165,6 +165,9 @@ class MatchingService {
 			return { success: false, message: "Already in working mode" };
 		}
 
+		// Clear any stale matched status when rejoining
+		this.matchedUsers.delete(profileId);
+
 		this.peerPool.set(profileId, { profileId, lastHeartbeat: Date.now() });
 
 		await db
@@ -178,6 +181,7 @@ class MatchingService {
 	async leavePeerPool(profileId: string): Promise<{ success: boolean; message: string }> {
 		const existed = this.peerPool.has(profileId);
 		this.peerPool.delete(profileId);
+		this.matchedUsers.delete(profileId);
 
 		await db
 			.update(schema.profile)
@@ -187,6 +191,10 @@ class MatchingService {
 		return existed
 			? { success: true, message: "Left peer pool" }
 			: { success: false, message: "Not in peer pool" };
+	}
+
+	clearMatchedStatus(profileId: string): void {
+		this.matchedUsers.delete(profileId);
 	}
 
 	getPeerStatus(profileId: string): {

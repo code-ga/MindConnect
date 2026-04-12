@@ -6,6 +6,7 @@ import { arrayContains, eq, and, inArray, not } from "drizzle-orm";
 import { Type } from "@sinclair/typebox";
 import { baseResponseSchema, errorResponseSchema } from "../types";
 import { dbSchemaTypes } from "../database/type";
+import { matchingService } from "../services/matching";
 
 export const chatroomRouter = new Elysia({
 	prefix: "/chatroom",
@@ -445,6 +446,8 @@ export const chatroomRouter = new Elysia({
 							participantIds: newParticipants,
 						})
 						.where(eq(schema.chattingRoom.id, ctx.params.id));
+
+					matchingService.clearMatchedStatus(ctx.profile.id);
 
 					return ctx.status(200, {
 						status: 200,
